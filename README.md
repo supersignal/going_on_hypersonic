@@ -91,15 +91,15 @@ src/
 ├── llm/                               # LLM
 |   └── llms.txt                        # 연동을 위한 개발자 문서
 ├── markdown/                          # Markdown
-|   ├── xxxxx00.md                        # 주요 markdown 00
-|   ├── .....                             .....
-|   └── xxxxx13.md                        # 주요 markdown 13
+|   ├── xxxxx00.md                      # 주요 markdown 00
+|   ├── .....                           .....
+|   └── xxxxx13.md                      # 주요 markdown 13
 ├── tool/                              # 서비스 계층
 │   └── service.ts                      # 검색결과 처리
 ├── utils/                             # 유틸리티
 │   ├── calculateBM25.ts                # BM25 검색 알고리즘
 │   └── toRemoteMarkdownLink.ts         # 링크 변환 유틸
-└── server.ts          # 메인 서버
+└── server.ts                          # 메인 서버
 ```
 
 ### 3.2 주요 의존성
@@ -364,7 +364,7 @@ keywordSet.add(keyword);               // 원본
 #### 사용 예시
 ```json
 {
-  "keywords": ["인증", "승인", "API", "WEBAPI", "WEB-API", "결제"]
+  "keywords": ["인증", "승인", "API", "WEBAPI", "결제", "취소"]
 }
 ```
 
@@ -548,7 +548,7 @@ class SemanticSearchEngine implements SearchEngine { ... }
 #### 설정 관리 개선
 ```typescript
 // 현재: 하드코딩된 경로
-link = "file:///Users/jiwon/Desktop/md/llms.txt"
+link = "https://github.com/supersignal/going_on_hypersonic/blob/main/llm/llms.txt"
 
 // 개선: 환경변수 기반 설정
 const config = {
@@ -643,20 +643,20 @@ server.tool("get_documents_v2", description, schema, handler);
 전반적으로 프로덕션 환경에서 사용 가능한 수준의 코드 품질을 보여주며, 제안된 개선사항들을 단계적으로 적용하면 더욱 견고하고 확장 가능한 시스템으로 발전시킬 수 있습니다.
 
 ### 주요 markdown
-Quickstart https://developers.nicepay.co.kr/index.php
-인증 결제 API https://developers.nicepay.co.kr/manual-auth.php
-카드 키인 API https://developers.nicepay.co.kr/manual-card-keyin.php
-카드 빌링 API https://developers.nicepay.co.kr/manual-card-billing.php
-가상계좌 발급 API https://developers.nicepay.co.kr/manual-virtual-account.php
-APP(iOS/Android) https://developers.nicepay.co.kr/manual-app.php
-결제조회 API https://developers.nicepay.co.kr/manual-status.php
-결제통보 https://developers.nicepay.co.kr/manual-noti.php
-영수증 https://developers.nicepay.co.kr/receipt.php
-카드사/은행 코드 https://developers.nicepay.co.kr/manual-code-partner.php
-결과코드 https://developers.nicepay.co.kr/manual-code.php
-예외/보안 처리 https://developers.nicepay.co.kr/manual-exception.php
-G2 인증서 변경 가이드 https://developers.nicepay.co.kr/manual-digicert-apply.php
-FAQ https://developers.nicepay.co.kr/tip.php
+Quickstart https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/00.index.markdown
+인증 결제 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/01.manual-auth.markdown
+카드 키인 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/02.manual-card-keyin.markdown
+카드 빌링 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/03.manual-card-billing.markdown
+가상계좌 발급 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/04.manual-virtual-account.markdown
+APP(iOS/Android) https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/05.manual-app.markdown
+결제조회 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/06.manual-status.markdown
+결제통보 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/07.manual-noti.markdown
+영수증 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/08.receipt.markdown
+카드사/은행 코드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/09.manual-code-partner.markdown
+결과코드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/10.manual-code.markdown
+예외/보안 처리 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/11.manual-exception.markdown
+G2 인증서 변경 가이드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/12.manual-digicert-apply.markdown
+FAQ https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/13.tip.markdown
 
 ---
 
