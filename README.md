@@ -643,20 +643,21 @@ server.tool("get_documents_v2", description, schema, handler);
 전반적으로 프로덕션 환경에서 사용 가능한 수준의 코드 품질을 보여주며, 제안된 개선사항들을 단계적으로 적용하면 더욱 견고하고 확장 가능한 시스템으로 발전시킬 수 있습니다.
 
 ### 주요 markdown
-Quickstart https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/00.index.markdown
-인증 결제 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/01.manual-auth.markdown
-카드 키인 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/02.manual-card-keyin.markdown
-카드 빌링 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/03.manual-card-billing.markdown
-가상계좌 발급 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/04.manual-virtual-account.markdown
-APP(iOS/Android) https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/05.manual-app.markdown
-결제조회 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/06.manual-status.markdown
-결제통보 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/07.manual-noti.markdown
-영수증 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/08.receipt.markdown
-카드사/은행 코드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/09.manual-code-partner.markdown
-결과코드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/10.manual-code.markdown
-예외/보안 처리 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/11.manual-exception.markdown
-G2 인증서 변경 가이드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/12.manual-digicert-apply.markdown
-FAQ https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/13.tip.markdown
+📚 Quickstart https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/00.index.markdown
+📚 인증 결제 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/01.manual-auth.markdown
+📚 카드 키인 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/02.manual-card-keyin.markdown
+📚 카드 빌링 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/03.manual-card-billing.markdown
+📚 가상계좌 발급 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/04.manual-virtual-account.markdown
+📚 APP(iOS/Android) https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/05.manual-app.markdown
+📚 결제조회 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/06.manual-status.markdown
+📚 결제통보 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/07.manual-noti.markdown
+📚 영수증 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/08.receipt.markdown
+📚 카드사/은행 코드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/09.manual-code-partner.markdown
+📚 결과코드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/10.manual-code.markdown
+📚 예외/보안 처리 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/11.manual-exception.markdown
+📚 G2 인증서 변경 가이드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/12.manual-digicert-apply.markdown
+📚 FAQ https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/13.tip.markdown
+📚 취소 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/14.cancel.markdown
 
 ---
 
