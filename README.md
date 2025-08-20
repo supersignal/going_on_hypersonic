@@ -91,9 +91,9 @@ src/
 ├── llm/                               # LLM
 |   └── llms.txt                        # 연동을 위한 개발자 문서
 ├── markdown/                          # Markdown
-|   ├── xxxxx00.md                      # 주요 markdown 00
+|   ├── 00.xxxxx.md                      # 주요 markdown 00
 |   ├── .....                           .....
-|   └── xxxxx13.md                      # 주요 markdown 13
+|   └── 14.xxxxx.md                      # 주요 markdown 14
 ├── tool/                              # 서비스 계층
 │   └── service.ts                      # 검색결과 처리
 ├── utils/                             # 유틸리티
@@ -644,19 +644,33 @@ server.tool("get_documents_v2", description, schema, handler);
 
 ### 주요 markdown
 📚 Quickstart https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/00.index.markdown
+
 📚 인증 결제 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/01.manual-auth.markdown
+
 📚 카드 키인 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/02.manual-card-keyin.markdown
+
 📚 카드 빌링 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/03.manual-card-billing.markdown
+
 📚 가상계좌 발급 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/04.manual-virtual-account.markdown
+
 📚 APP(iOS/Android) https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/05.manual-app.markdown
+
 📚 결제조회 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/06.manual-status.markdown
+
 📚 결제통보 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/07.manual-noti.markdown
+
 📚 영수증 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/08.receipt.markdown
+
 📚 카드사/은행 코드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/09.manual-code-partner.markdown
+
 📚 결과코드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/10.manual-code.markdown
+
 📚 예외/보안 처리 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/11.manual-exception.markdown
+
 📚 G2 인증서 변경 가이드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/12.manual-digicert-apply.markdown
+
 📚 FAQ https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/13.tip.markdown
+
 📚 취소 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/14.cancel.markdown
 
 ---

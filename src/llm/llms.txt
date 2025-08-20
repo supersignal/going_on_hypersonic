@@ -1,0 +1,36 @@
+# NicePay Developer Documentation
+
+NicePay PG 연동을 위한 개발자 문서입니다.
+
+## 안내
+- [Quickstart]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/00.index.markdown) : 고객사에서 방화벽 열어야하는 대상정보 및 설정 확인방법 안내, 결제/취소 데모 화면 링크 제공, 결제 샘플코드(인증결제 api 샘플코드, app web-view 샘플코드, 결제통보 샘플코드) 
+- [G2 인증서 변경 가이드]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/13.manual-digicert-apply.markdown) : 
+- [FAQ]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/14.tip.markdown) : 
+
+## API
+- [인증 결제 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/01.manual-auth.markdown) : 
+- [카드 키인 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/02.manual-card-keyin.markdown) : 
+- [카드 빌링 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/03.manual-card-billing.markdown) : 
+- [가상계좌 발급 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/04.manual-virtual-account.markdown) : 
+- [취소 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/05.manual-cancel.markdown) : 
+- [결제조회 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/07.manual-status.markdown) : 
+- [결제통보 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/08.manual-noti.markdown) : 
+- [영수증 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/09.manual.receipt.markdown) : 
+
+## APP
+- [APP(iOS/Android)]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/06.manual-app.markdown) : 
+
+## 코드
+- [카드사/은행 코드]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/10.manual-code-partner.markdown) : 
+- [결과코드]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/11.manual-code.markdown) : 
+
+## 예외
+- [예외/보안 처리]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/12.manual-exception.markdown) : 
+
+## 지원
+기술 지원이 필요하신 경우 아래 연락처로 문의해주세요:
+- 이메일: it@nicepay.co.kr
+- 연동한 API 문서와 요청/응답값, 증상의 상세내용을 전달하시면 빠른 응대가 가능합니다.
+
+---
+© NICEPAYMENTS 2025

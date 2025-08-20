@@ -1,0 +1,27 @@
+import { NicePaymentDocsRepository } from "../repository/nicepayments-docs.repository.js";
+export const repository = await NicePaymentDocsRepository.load();
+export async function getDocumentsByKeyword(keywords) {
+    // [디버그] 입력된 키워드 출력
+    console.log('[DEBUG][service] 입력 키워드:', keywords);
+    try {
+        const text = await repository.findDocumentsByKeyword(keywords);
+        // [디버그] 검색 결과 텍스트 출력
+        console.log('[DEBUG][service] 검색 결과 텍스트:', text);
+        return {
+            content: [{ type: "text", text }],
+        };
+    }
+    catch (e) {
+        // [디버그] 에러 발생 시 에러 메시지 출력
+        console.log('[DEBUG][service] 에러 발생:', e);
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: e instanceof Error ? e.message : "오류가 발생하였습니다.",
+                },
+            ],
+            isError: true,
+        };
+    }
+}

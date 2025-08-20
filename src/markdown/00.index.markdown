@@ -1,0 +1,117 @@
+# Nicepay API 2.0 - Manual
+- https://developers.nicepay.co.kr/index.php
+
+## Table of Contents
+- [Quickstart](#quickstart)
+- [인증 결제 API](#인증-결제-api)
+- [카드 키인 API](#카드-키인-api)
+- [카드 빌링 API](#카드-빌링-api)
+- [가상계좌 발급 API](#가상계좌-발급-api)
+- [APP (iOS/Android)](#app-iosandroid)
+- [결제 조회 API](#결제-조회-api)
+- [결제통보](#결제통보)
+- [영수증](#영수증)
+- [카드사/은행 코드](#카드사은행-코드)
+- [결과코드](#결과코드)
+- [예외/보안 처리](#예외보안-처리)
+- [G2 인증서 변경 가이드](#g2-인증서-변경-가이드)
+- [FAQ](#faq)
+
+## Quickstart
+
+### 1. 방화벽 설정
+| 프로토콜 | 연결대상 |
+|----------|----------|
+| HTTPS    | **PORT**: 443 **연결방향**: OUTBOUND<br>dc1-api.nicepay.co.kr (121.133.126.56)<br>dc2-api.nicepay.co.kr (211.44.32.56)<br>pg-api.nicepay.co.kr (121.133.126.56, 211.44.32.56) |
+
+```bash
+telnet 121.133.126.56 443
+telnet 211.44.32.56 443
+
+nslookup dc1-api.nicepay.co.kr
+nslookup dc2-api.nicepay.co.kr
+nslookup pg-api.nicepay.co.kr
+```
+
+- 제품에 알맞는 IP / Port를 확인하여 방화벽 설정을 합니다.
+- 방화벽 설정이 정상적으로 되었는지 확인합니다 (telnet, nslookup).
+
+### 2. API 호출이 가능한 웹 어플리케이션 서버 준비
+- HTTPS 통신이 원활한 환경을 준비합니다.
+- SSL 인증서가 없는 경우 승인 호출이 원활하지 않을 수 있습니다.
+
+### 3. 파라미터를 가공하여 승인 API 호출
+- 상세 파라미터 확인은 API 문서를 참조하세요.
+
+### 4. 기술문의
+- 메일로 API, 요청/응답값과 증상의 상세내용을 전달하면 빠른 응대가 가능합니다.
+- **Email**: it@nicepay.co.kr
+
+## 결제/취소 데모
+- 결제 및 취소 데모 페이지를 통해 연동 전 나이스페이의 결제 서비스 흐름을 체험할 수 있습니다.
+- 결제 데모 페이지를 통해 결제된 거래는 별도 취소 요청이 없는 경우 결제 당일 23시 30분에 자동 취소됩니다.
+
+| 내용       | 링크                                                                 |
+|------------|----------------------------------------------------------------------|
+| 결제 데모 | [PC 결제](https://www.nicepay.co.kr/support/demo/pcReqPopup.do) <br> [Mobile 결제](https://www.nicepay.co.kr/support/demo/smartReqPopup.do) |
+| 취소 데모 | [결제 취소](https://www.nicepay.co.kr/support/demo/cancelReqPopup.do) |
+
+## 다운로드 (결제 샘플코드)
+- **결제 샘플코드**는 매뉴얼을 기반으로 제작되었으며, 필수 파라미터 및 결제 흐름 파악 용도로 사용 가능합니다.
+- 실제 결제 연동 개발은 API를 참고한 후 가맹점 결제 프로세스의 예외사항을 고려하여 개발합니다.
+
+| 내용                     | 링크                                                                 |
+|--------------------------|----------------------------------------------------------------------|
+| 인증결제 API 샘플코드    | [JSP](./releases/auth/NICEPAY-API-JSP-3.2.0.zip) <br> [PHP](./releases/auth/NICEPAY-API-PHP-3.2.0.zip) <br> [.NET](./releases/auth/NICEPAY-API-NET-3.2.0.zip) <br> [NODE.JS](./releases/auth/NICEPAY-API-NODEJS-3.2.1.zip) <br> [PYTHON](./releases/auth/NICEPAY-API-PYTHON-3.2.0.zip) |
+| App web-view 샘플코드    | [iOS(obj-c, swift)](./releases/app/NICEPAY-IOS.zip) <br> [Android(java, kotlin)](./releases/app/NICEPAY-ANDROID.zip) |
+| 결제통보 샘플코드        | [JSP](./releases/noti/NICEPAY-NOTI-SAMPLE-JSP.zip) <br> [PHP](./releases/noti/NICEPAY-NOTI-SAMPLE-PHP.zip) <br> [.NET](./releases/noti/NICEPAY-NOTI-SAMPLE-NET.zip) |
+
+## 주의 사항
+- **Test 계정을 통한 결제는 23:30에 일괄 취소됩니다.**
+- **가상계좌 테스트 및 결제 환불을 원하는 경우 운영팀으로 요청하시기 바랍니다.**
+- **에스크로 결제 테스트를 원하시는 경우는 영업담당자를 통해 문의하시기 바랍니다.**
+- **결제 샘플 코드는 참조용으로, 결제 연동 개발에 대한 모든 책임은 가맹점에 있습니다.**
+- **기술문의**: it@nicepay.co.kr
+
+## 인증 결제 API
+[인증 결제 API 문서](manual-auth.php)
+
+## 카드 키인 API
+[카드 키인 API 문서](manual-card-keyin.php)
+
+## 카드 빌링 API
+[카드 빌링 API 문서](manual-card-billing.php)
+
+## 가상계좌 발급 API
+[가상계좌 발급 API 문서](manual-virtual-account.php)
+
+## APP (iOS/Android)
+[APP 문서](manual-app.php)
+
+## 결제 조회 API
+[결제 조회 API 문서](manual-status.php)
+
+## 결제통보
+[결제통보 문서](manual-noti.php)
+
+## 영수증
+[영수증 문서](receipt.php)
+
+## 카드사/은행 코드
+[카드사/은행 코드 문서](manual-code-partner.php)
+
+## 결과코드
+[결과코드 문서](manual-code.php)
+
+## 예외/보안 처리
+[예외/보안 처리 문서](manual-exception.php)
+
+## G2 인증서 변경 가이드
+[G2 인증서 변경 가이드 문서](manual-digicert-apply.php)
+
+## FAQ
+[FAQ 문서](tip.php)
+
+---
+
+© 2025 [NICEPAYMENTS](https://www.nicepay.co.kr)

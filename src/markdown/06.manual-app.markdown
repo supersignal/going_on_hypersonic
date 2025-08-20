@@ -1,0 +1,258 @@
+# Nicepay API 2.0 - APP (iOS/Android)
+- https://developers.nicepay.co.kr/manual-app.php
+
+## ✅ 준비하기  
+- 하이브리드 App 연동을 위해 먼저 **Nicepay Web 결제 구성**이 완료되어야 합니다.  
+- Web 결제 설정 완료 후 **앱(WebView) 샘플 코드**를 참고해 연동을 구현합니다. ([developers.nicepay.co.kr](https://developers.nicepay.co.kr/manual-app.php?utm_source=chatgpt.com))
+
+## 📦 지원 환경  
+- Android: **4.4 (KitKat)** 이상  
+- iOS: **iOS 9.0** 이상  
+- Swift: **Swift 4.0** 이상 (Xcode 7.x 이상)
+
+## 🤖 Android 연동
+
+### 1. Android (Kotlin / Java) 준비하기  
+- `AndroidManifest.xml`에 **앱카드 및 간편결제** 연동을 위한 여러 패키지명을 `<queries>` 항목으로 등록합니다.  
+- `INTERNET` 권한과 `usesCleartextTraffic` 설정도 포함해야 합니다.
+
+```AndroidManifest.xml
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="kr.co.nicepay.nicepayappsample">
+
+	<queries>
+        <!--신용카드-->
+        <package android:name="kr.co.samsungcard.mpocket" />  <!--삼성 앱카드, 삼성 앱카드 공동인증서-->
+        <package android:name="com.shcard.smartpay" />  <!--신한 페이판-->
+        <package android:name="com.shinhancard.smartshinhan" />  <!--신한(ARS/일반결제/Smart결제), 신한 공동인증서-->
+        <package android:name="com.kbcard.cxh.appcard" />  <!--KBPay-->
+        <package android:name="com.kbstar.liivbank" />  <!--LiiV(국민은행)-->
+        <package android:name="com.kbstar.reboot" />  <!--new liib-->
+        <package android:name="kvp.jjy.MispAndroid320" />  <!--페이북/ISP-->
+        <package android:name="com.hanaskcard.paycla" />  <!--하나카드 원큐페이-->
+        <package android:name="kr.co.hanamembers.hmscustomer" />  <!--하나멤버스-->
+        <package android:name="com.lcacApp" />  <!--롯데 앱카드-->
+        <package android:name="nh.smart.nhallonepay" />  <!--NH 올원페이, NH 올원페이 공동인증서-->
+        <package android:name="com.wooricard.smartapp" />  <!--우리 WON 카드-->
+		<package android:name="com.wooribank.smart.npib" />  <!--우리 WON 뱅킹-->
+        <package android:name="com.hyundaicard.appcard" />  <!--현대 앱카드-->
+        <package android:name="kr.co.citibank.citimobile" />  <!--씨티카드-->
+		<package android:name="com.shinhan.smartcaremgr" />  <!--신한슈퍼SOL-->
+		<package android:name="net.ib.android.smcard" />  <!--삼성 monimo-->
+		<package android:name="com.kakaobank.channel" />  <!--카카오뱅크 앱카드-->
+
+        <!--공인인증-->
+        <package android:name="com.hanaskcard.rocomo.potal" />  <!--하나카드-->
+        <package android:name="com.lumensoft.touchenappfree" />  <!--공동인증서-->
+
+        <!--백신-->
+        <package android:name="com.TouchEn.mVaccine.webs" />  <!--TouchEn mVaccine(신한)-->
+        <package android:name="com.ahnlab.v3mobileplus" />  <!--V3(NH, 현대)-->
+        <package android:name="kr.co.shiftworks.vguardweb" />  <!--V-Guard(삼성)-->
+
+        <!--간편결제-->
+        <package android:name="com.samsung.android.spay" />  <!--삼성페이(삼성, 농협, KB)-->
+        <package android:name="com.samsung.android.spaylite" />  <!--삼성페이 미니(삼성, KB)-->
+        <package android:name="com.kakao.talk" />  <!--카카오페이-->
+        <package android:name="com.nhn.android.search" />  <!--네이버페이-->
+        <package android:name="com.ssg.serviceapp.android.egiftcertificate" />  <!--SSGPay(현대)-->
+        <package android:name="com.nhnent.payapp" />  <!--페이코(삼성, 농협, KB)-->
+        <package android:name="com.lge.lgpay" />  <!--엘지페이(삼성, KB)-->
+        <package android:name="com.lottemembers.android" />  <!--LPay-->
+		<package android:name="com.tencent.mm" /> <!-- 위챗페이-->
+        <package android:name="viva.republica.toss" /> <!-- 토스-->
+
+        <!--계좌이체-->
+        <package android:name="com.kftc.bankpay.android" />  <!--금결원-->
+		<package android:name="com.kbankwith.smartbank" />  <!--케이뱅크-->
+
+
+        <!--본인인증-->
+        <package android:name="com.sktelecom.tauth" />  <!--SKT-->
+        <package android:name="com.kt.ktauth" />  <!--KT-->
+        <package android:name="com.lguplus.smartotp" />  <!--LGT-->
+    </queries>
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"
+        android:usesCleartextTraffic="true">
+        <activity android:name=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".WebViewActivity"
+            android:label="NicePay Smart"
+            android:configChanges="orientation"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>
+```
+
+
+
+### 2. 웹뷰 설정  
+- `JavaScript` 실행 허용 및 `DOM Storage`, Mixed‑Content 모드 설정  
+- **쿠키 허용**과 **세션 유지** 설정  
+- 캐시 모드는 **LOAD_DEFAULT**로 권장 (LOAD_CACHE_ELSE_NETWORK는 권고하지 않음)
+
+### 3. 결제 페이지 호출  
+- 테스트용 **MERCHANT_URL**은  
+  ```
+  https://web.nicepay.co.kr/demo/v3/mobileReq.jsp
+  ```
+  연동 완료 후 실제 가맹점 URL로 변경해야 합니다.  
+- WebView의 `postUrl` 또는 `loadUrl`을 사용한 결제 요청 전송
+
+### 4. URI 처리 및 Intent 호출  
+- WebView 내 특정 scheme(`intent:`, `.apk`, 인증서, 앱 관련 등)에 대한 처리 구현  
+- 앱이 설치되지 않은 경우 자동으로 Google Play 또는 App Store로 이동하도록 설정
+
+```WebViewClientClass.java
+private class WebViewClientClass extends WebViewClient {
+    @Override
+    public boolean shouldOverrideUrlLoading(WebView view, String url) {
+        Log.i(TAG,"url : " + url);
+
+        try {
+			if( url != null && (url.startsWith("intent:")
+                        || url.contains("market://")
+                        || url.contains("vguard")
+                        || url.contains("droidxantivirus")
+                        || url.contains("v3mobile")
+                        || url.contains(".apk")
+                        || url.contains("mvaccine")
+                        || url.contains("smartwall://")
+                        || url.contains("nidlogin://")
+						|| url.contains("onestore://")
+                        || url.contains("http://m.ahnlab.com/kr/site/download")) ) {
+
+                Intent intent = null;
+
+                try {
+                    intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                } catch (URISyntaxException ex) {
+                    Log.e(TAG,"[error] Bad request uri format : [" + url + "] =" + ex.getMessage());
+                    return false;
+                }
+
+                if( getPackageManager().resolveActivity(intent,0) == null ) {
+                    String pkgName = intent.getPackage();
+                    if( pkgName != null ) {
+                        Uri uri = Uri.parse("market://search?q=pname:" + pkgName);
+                        intent = new Intent(Intent.ACTION_VIEW, uri);
+                        startActivity(intent);
+                    }
+                } else {
+                    Uri uri = Uri.parse(intent.getDataString());
+                    intent = new Intent(Intent.ACTION_VIEW, uri);
+                    startActivity(intent);
+                }
+            } else {
+                view.loadUrl(url);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
+    }
+}
+```
+
+## 🍏 iOS 연동
+
+### 1. Swift 기반 연동  
+- `info.plist`에 **URL Scheme 등록** (앱→3rd 앱 / 3rd 앱→가맹점 앱 자동 전환 목적)  
+- WebView(`WKWebView`)를 사용해 `PAY_URL` 로드하고, payment flow 구현
+
+### 2. Objective-C 기반 연동  
+- Swift 방식과 유사하게 `info.plist` URL Scheme 설정  
+- `WKWebView` 로 결제 페이지 호출, delegate 방식으로 URL 전환 제어
+
+### 3. JavaScript 팝업 처리  
+- JavaScript alert 등 팝업 이벤트 대응을 위한 legate` `W KUIDe구현  
+- 사용자에게 메시지 팝업 방식 안내 및 확인 버튼 처리
+
+### 4. iOS SWIFT Web-view 연동
+```iOS SWIFT Web-view 연동
+func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+    let request = navigationAction.request
+    let optUrl = request.url
+    let optUrlScheme = optUrl?.scheme
+
+    guard let url = optUrl, let scheme = optUrlScheme
+        else {
+            return decisionHandler(WKNavigationActionPolicy.cancel)
+    }
+
+    debugPrint("url : \(url)")
+
+    if( scheme != "http" && scheme != "https" ) {
+        if( scheme == "ispmobile" && !UIApplication.shared.canOpenURL(url) ) {  //ISP 미설치 시
+            UIApplication.shared.openURL(URL(string: "http://itunes.apple.com/kr/app/id369125087?mt=8")!)
+        } else if( scheme == "kftc-bankpay" && !UIApplication.shared.canOpenURL(url) ) {    //BANKPAY 미설치 시
+            UIApplication.shared.openURL(URL(string: "http://itunes.apple.com/us/app/id398456030?mt=8")!)
+        } else {
+            if( UIApplication.shared.canOpenURL(url) ) {
+                UIApplication.shared.openURL(url)
+            } else {
+                //1. App 미설치 확인
+                //2. info.plist 내 scheme 등록 확인
+            }
+        }
+    }
+
+    decisionHandler(WKNavigationActionPolicy.allow)
+}
+
+```
+
+```iOS Objective-C Web-view 연동
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
+    NSURLRequest *request = navigationAction.request;
+    NSURL *url = [request URL];
+    NSString *urlScheme = [url scheme];
+    
+    NSLog(@"url : %@", url);
+    
+    if( ![urlScheme isEqualToString:@"http"] && ![urlScheme isEqualToString:@"https"] ) {
+        if( [urlScheme isEqualToString:@"ispmobile"] && ![[UIApplication sharedApplication] canOpenURL:url] ) {
+            //ISP App가 설치되어 있지 않을 경우 앱스토어로 이동
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"http://itunes.apple.com/kr/app/id369125087?mt=8"]];
+        } else if( [urlScheme isEqualToString:@"kftc-bankpay"] && ![[UIApplication sharedApplication] canOpenURL:url] ) {
+            //BANKPAY App가 설치되어 있지 않을 경우 앱스토어로 이동
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"http://itunes.apple.com/us/app/id398456030?mt=8"]];
+        } else {
+            if( [[UIApplication sharedApplication] canOpenURL:url] ) {
+                [[UIApplication sharedApplication] openURL:url];    //App 실행
+            } else {
+                //1. App 미설치 확인
+                //2. info.plist 내 scheme 등록 확인
+            }
+        }
+    }
+    
+    decisionHandler(WKNavigationActionPolicyAllow);
+}
+
+```

@@ -1,0 +1,459 @@
+# Nicepay API 2.0 - 결제조회 API
+- https://developers.nicepay.co.kr/manual-status.php
+
+해당 서비스는 거래의 TID를 기반으로 결제 승인 또는 취소 여부 등 현재 결제 상태를 확인할 수 있도록 도와줍니다.
+
+## 📌 주요 개요
+- 이 문서는 나이스페이 거래상태조회 API 사용법과 실제 구현 예제를 제공합니다.
+- 특정 거래에 대한 결제 승인 또는 취소 상태를 조회하는 기능
+- 가상계좌(TID)의 경우, 입금이 완료되어야 승인 처리 상태가 전달됩니다
+- 결제(승인) 또는 취소 요청 이후에, 시스템이 처리된 결과를 확인하기 위해 활용
+
+## API 정보
+- **URL**: `https://webapi.nicepay.co.kr/webapi/inquery/trans_status.jsp`
+- **Method**: POST
+- **Content-Type**: `application/x-www-form-urlencoded`
+- **Charset**: EUC-KR
+
+## ✅ 요청 파라미터
+
+| 파라미터 | 길이 | 필수 | 설명 |
+|---------|------|------|------|
+| TID     | 30B  | Y | 거래번호 |
+| MID     | 10B  | Y | 상점아이디 |
+| EdiDate | 14B  | Y | 전문생성일시 (yyyyMMddHHmmss) |
+| SignData| 256B | Y | SHA-256 해시값 (TID + MID + EdiDate + MerchantKey) |
+| CharSet | 10B  |  | 응답 인코딩 (euc-kr(default) / utf-8) |
+| EdiType | 10B  |  | 응답전문 유형 (JSON / KV) *KV:Key=value |
+
+## ✅ 응답 파라미터
+
+| 파라미터     | 길이 | 필수 | 설명 |
+|------------|------|------|------|
+| ResultCode | 4B   | Y | 결과코드 (0000: 성공 / 그외 실패) |
+| ResultMsg  | 100B | Y | 결과메시지 |
+| TID        | 30B  | Y | 거래번호 |
+| Status     | 1B   | Y | 거래상태 (0: 승인 상태, 1: 취소 상태, 9: 승인 거래 없음) |
+| AuthCode   | 30B  |  | 승인번호 |
+| AuthDate   | 12B  |  | 승인일시 |
+
+## 🔄 처리 흐름 요약
+
+1. 가맹점이 TID를 포함하여 조회 API 호출
+2. PG사(나이스페이)에서 해당 시장 거래 결과 데이터 응답
+3. 가맹점 서버에서 응답 서명(SignData/Signature) 검증
+4. `resultCode === '0000'`일 경우 상태(`status`) 확인 후 후속 처리
+5. 예외 상태 (미결제, 취소, 오류 등)에 대한 예외 처리 로직 반영
+
+## 📂 구현 예제 (Pseudo-code)
+
+### 1. Java/JSP 구현
+
+```jsp
+<%@ page contentType="text/html; charset=euc-kr"%>
+<%@ page import="java.util.Date"%>
+<%@ page import="java.util.HashMap"%>
+<%@ page import="java.util.Iterator"%>
+<%@ page import="java.io.PrintWriter"%>
+<%@ page import="java.io.BufferedReader"%>
+<%@ page import="java.io.InputStreamReader"%>
+<%@ page import="java.net.URL"%>
+<%@ page import="java.net.HttpURLConnection"%>
+<%@ page import="java.text.SimpleDateFormat"%>
+<%@ page import="java.security.MessageDigest"%>
+<%@ page import="org.json.simple.JSONObject"%>
+<%@ page import="org.json.simple.parser.JSONParser"%>
+<%@ page import="org.apache.commons.codec.binary.Hex"%>
+
+<%
+request.setCharacterEncoding("euc-kr");
+String transStatusURL = "https://webapi.nicepay.co.kr/webapi/inquery/trans_status.jsp";
+String mid = ""; // 상점아이디
+String tid = ""; // 거래번호
+
+// 응답 결과 파라미터 초기화
+String ResultCode = "";
+String ResultMsg = "";
+String TID = "";
+String Status = "";
+String resultJsonStr = "";
+
+/*
+****************************************************************************************
+* <해쉬암호화> (수정하지 마세요)
+* SHA-256 해쉬암호화는 거래 위변조를 막기위한 방법입니다.
+****************************************************************************************
+*/
+DataEncrypt sha256Enc = new DataEncrypt();
+String merchantKey = "";
+String ediDate = getyyyyMMddHHmmss();
+String SignData = sha256Enc.encrypt(tid + mid + ediDate + merchantKey);
+
+StringBuffer requestData = new StringBuffer();
+requestData.append("TID=").append(tid).append("&");
+requestData.append("MID=").append(mid).append("&");
+requestData.append("EdiDate=").append(ediDate).append("&");
+requestData.append("Charset=").append("euc-kr").append("&");
+requestData.append("SignData=").append(SignData).append("&");
+
+// API Call
+resultJsonStr = connectToServer(requestData.toString(),transStatusURL);
+HashMap resultData = new HashMap();
+resultData = jsonStringToHashMap(resultJsonStr);
+
+ResultCode = (String) resultData.get("ResultCode");
+ResultMsg = (String) resultData.get("ResultMsg");
+TID = (String) resultData.get("TID");
+Status = (String) resultData.get("Status");
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>NICEPAY TRANSACTION_STATUS_RESULT(EUC-KR)</title>
+<meta charset="euc-kr">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=yes, target-densitydpi=medium-dpi" />
+</head>
+<body>
+<div class="top">NICEPAY TRANSACTION_STATUS_RESULT(EUC-KR)</div>
+<div class="conwrap">
+<div class="tabletypea">
+<table>
+<colgroup>
+<col width="150px" />
+<col width="*">
+</colgroup>
+<tr>
+<th><span>ResultCode</span></th>
+<td><%=ResultCode%></td>
+</tr>
+<tr>
+<th><span>ResultMsg</span></th>
+<td><%=ResultMsg%></td>
+</tr>
+<tr>
+<th><span>TID</span></th>
+<td><%=TID%></td>
+</tr>
+<tr>
+<th><span>Status</span></th>
+<td><%=Status%></td>
+</tr>
+</table>
+</div>
+</div>
+</body>
+</html>
+
+<%!
+// 날짜 포맷 함수
+public final synchronized String getyyyyMMddHHmmss() {
+    SimpleDateFormat yyyyMMddHHmmss = new SimpleDateFormat("yyyyMMddHHmmss");
+    return yyyyMMddHHmmss.format(new Date());
+}
+
+// SHA-256 암호화 클래스
+public class DataEncrypt {
+    MessageDigest md;
+    String strSRCData = "";
+    String strENCData = "";
+    String strOUTData = "";
+    
+    public DataEncrypt() {
+    }
+    
+    public String encrypt(String strData) {
+        String passACL = null;
+        MessageDigest md = null;
+        try {
+            md = MessageDigest.getInstance("SHA-256");
+            md.reset();
+            md.update(strData.getBytes());
+            byte[] raw = md.digest();
+            passACL = encodeHex(raw);
+        } catch (Exception e) {
+            System.out.print("encryption error" + e.toString());
+        }
+        return passACL;
+    }
+    
+    public String encodeHex(byte[] b) {
+        char[] c = Hex.encodeHex(b);
+        return new String(c);
+    }
+}
+
+// API 호출 함수
+public String connectToServer(String data, String reqUrl) throws Exception {
+    HttpURLConnection conn = null;
+    BufferedReader resultReader = null;
+    PrintWriter pw = null;
+    URL url = null;
+    int statusCode = 0;
+    StringBuffer recvBuffer = new StringBuffer();
+    
+    try {
+        url = new URL(reqUrl);
+        conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("POST");
+        conn.setConnectTimeout(15000);
+        conn.setReadTimeout(25000);
+        conn.setDoOutput(true);
+        
+        pw = new PrintWriter(conn.getOutputStream());
+        pw.write(data);
+        pw.flush();
+        
+        statusCode = conn.getResponseCode();
+        resultReader = new BufferedReader(new InputStreamReader(conn.getInputStream(), "euc-kr"));
+        for (String temp; (temp = resultReader.readLine()) != null;) {
+            recvBuffer.append(temp).append("\n");
+        }
+        
+        if (!(statusCode == HttpURLConnection.HTTP_OK)) {
+            throw new Exception();
+        }
+        return recvBuffer.toString().trim();
+    } catch (Exception e) {
+        return "9999";
+    } finally {
+        recvBuffer.setLength(0);
+        try {
+            if (resultReader != null) {
+                resultReader.close();
+            }
+        } catch (Exception ex) {
+            resultReader = null;
+        }
+        try {
+            if (pw != null) {
+                pw.close();
+            }
+        } catch (Exception ex) {
+            pw = null;
+        }
+        try {
+            if (conn != null) {
+                conn.disconnect();
+            }
+        } catch (Exception ex) {
+            conn = null;
+        }
+    }
+}
+
+// JSON 파싱 함수
+private static HashMap jsonStringToHashMap(String str) throws Exception {
+    HashMap dataMap = new HashMap();
+    JSONParser parser = new JSONParser();
+    try {
+        Object obj = parser.parse(str);
+        JSONObject jsonObject = (JSONObject) obj;
+        Iterator<String> keyStr = jsonObject.keySet().iterator();
+        while (keyStr.hasNext()) {
+            String key = keyStr.next();
+            Object value = jsonObject.get(key);
+            dataMap.put(key, value);
+        }
+    } catch (Exception e) {
+    }
+    return dataMap;
+}
+%>
+```
+
+### 2. PHP 구현
+
+```php
+<?php
+header("Content-Type:text/html; charset=euc-kr;");
+
+$tid = ""; // 거래 ID
+$mid = ""; // 상점 아이디
+$charSet = ""; // 응답 인코딩
+$response = "";
+
+/*
+****************************************************************************************
+* <해쉬암호화> (수정하지 마세요)
+* SHA-256 해쉬암호화는 거래 위변조를 막기위한 방법입니다.
+****************************************************************************************
+*/
+$ediDate = date("YmdHis");
+$merchantKey = ""; // 상점키
+$postURL = "https://webapi.nicepay.co.kr/webapi/inquery/trans_status.jsp";
+$signData = bin2hex(hash('sha256', $tid . $mid . $ediDate . $merchantKey, true));
+
+$data = Array(
+    'TID' => $tid,
+    'MID' => $mid,
+    'CharSet' => $charSet,
+    'EdiDate' => $ediDate,
+    'SignData' => $signData
+);
+
+$response = reqPost($data, $postURL); //승인 호출
+jsonRespDump($response); //response json dump example
+
+// API CALL foreach 예시
+function jsonRespDump($resp){
+    $resp_utf = iconv("EUC-KR", "UTF-8", $resp);
+    $respArr = json_decode($resp_utf);
+    foreach ( $respArr as $key => $value ){
+        echo "$key=". iconv("UTF-8", "EUC-KR", $value)."<br>";
+    }
+}
+
+//Post api call
+function reqPost(Array $data, $url){
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15); //connection timeout 15
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data)); //POST data
+    curl_setopt($ch, CURLOPT_POST, true);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    return $response;
+}
+?>
+```
+
+### 3. C# (ASP.NET) 구현
+
+```csharp
+using System;
+using System.Web.UI;
+using System.Security.Cryptography;
+using System.Text;
+using System.Net;
+using System.IO;
+using System.Web;
+
+public partial class statusResponse : System.Web.UI.Page
+{
+    protected System.Web.UI.WebControls.Literal Res_ResultCode;
+    protected System.Web.UI.WebControls.Literal Res_ResultMsg;
+    protected System.Web.UI.WebControls.Literal Res_Status;
+    protected System.Web.UI.WebControls.Literal Res_TID;
+    
+    protected string tid;
+    protected string signData;
+    protected string ediDate;
+    protected string merchantKey;
+    protected string mid;
+    protected string charSet;
+    protected string postURL;
+    
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        if (!Page.IsPostBack)
+        {
+            resultData();
+        }
+    }
+    
+    protected void resultData()
+    {
+        merchantKey = "";
+        tid = "";
+        mid = "";
+        charSet = "";
+        ediDate = String.Format("{0:yyyyMMddHHmmss}", DateTime.Now);
+        signData = stringToSHA256(tid + mid + ediDate + merchantKey);
+        postURL = "https://webapi.nicepay.co.kr/webapi/inquery/trans_status.jsp";
+        
+        var postData = "TID=" + Uri.EscapeDataString(tid);
+        postData += "&MID=" + Uri.EscapeDataString(mid);
+        postData += "&EdiDate=" + ediDate;
+        postData += "&CharSet=" + Uri.EscapeDataString(charSet);
+        postData += "&EdiType=" + "KV";
+        postData += "&SignData=" + Uri.EscapeDataString(signData);
+        
+        //API Call
+        var result = apiRequest(postURL, postData);
+        
+        //Stream encode
+        var queryStr = streamEncode(result);
+        
+        //ParseQueryString
+        var response = HttpUtility.ParseQueryString(queryStr);
+        
+        //Response data
+        Res_ResultCode.Text = response["ResultCode"];
+        Res_ResultMsg.Text = response["ResultMsg"];
+        Res_Status.Text = response["Status"];
+        Res_TID.Text = response["TID"];
+    }
+    
+    public String stringToSHA256(String plain)
+    {
+        SHA256Managed SHA256 = new SHA256Managed();
+        String getHashString = BitConverter.ToString(SHA256.ComputeHash(Encoding.UTF8.GetBytes(plain))).ToLower();
+        return getHashString.Replace("-", "");
+    }
+    
+    public HttpWebResponse apiRequest(String url, String postData)
+    {
+        var request = (HttpWebRequest)WebRequest.Create(url);
+        System.Text.Encoding euckr = System.Text.Encoding.GetEncoding(51949);
+        var data = euckr.GetBytes(postData);
+        
+        request.Method = "POST";
+        request.ContentType = "application/x-www-form-urlencoded";
+        request.ContentLength = data.Length;
+        
+        using (var stream = request.GetRequestStream())
+        {
+            stream.Write(data, 0, data.Length);
+        }
+        
+        var result = (HttpWebResponse)request.GetResponse();
+        return result;
+    }
+    
+    public String streamEncode(HttpWebResponse result)
+    {
+        Stream ReceiveStream = result.GetResponseStream();
+        Encoding encode = System.Text.Encoding.GetEncoding(51949);
+        StreamReader sr = new StreamReader(ReceiveStream, encode);
+        Char[] read = new Char[8096];
+        int count = sr.Read(read, 0, 8096);
+        Char[] chTemp = new Char[count];
+        for (int i = 0; i < count; ++i)
+            chTemp[i] = read[i];
+        Byte[] buffer = encode.GetBytes(chTemp);
+        String strOut = encode.GetString(buffer);
+        return strOut;
+    }
+}
+```
+
+## ⚠️ 중요 사항
+
+### 보안
+- **SignData**: 거래 위변조 방지를 위해 반드시 SHA-256 해시 암호화를 사용해야 합니다.
+- **MerchantKey**: 상점키는 절대 노출되면 안 됩니다.
+
+### 인코딩
+- API 요청/응답은 모두 **EUC-KR** 인코딩을 사용합니다.
+- 응답 데이터를 UTF-8로 변환할 때는 적절한 인코딩 변환이 필요합니다.
+
+### 타임아웃
+- 연결 타임아웃: 15초
+- 읽기 타임아웃: 25초
+
+### 에러 처리
+- API 호출 실패 시 "9999" 코드가 반환됩니다.
+- 네트워크 오류나 서버 오류에 대비한 예외 처리가 필요합니다.
+
+## 테스트 환경
+개발 및 테스트를 위해서는 나이스페이에서 제공하는 테스트 계정 정보를 사용하시기 바랍니다.
+
+## 🔗 관련 문서
+- [인증 결제 API 가이드 (Auth)](https://developers.nicepay.co.kr/manual-auth.php)
+- [결제 통보 API (Notify)](https://developers.nicepay.co.kr/manual-noti.php)
+- [정기결제 기능 연동 문서 (Subscribe)](https://github.com/nicepayments/nicepay-manual/wiki/subscribe-integration)
+
+---

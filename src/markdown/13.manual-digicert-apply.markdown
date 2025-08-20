@@ -1,0 +1,156 @@
+# Nicepay API 2.0 - G2 인증서 변경 가이드
+- https://developers.nicepay.co.kr/manual-digicert-apply.php
+
+## 개요
+이 가이드는 NICEPAY 결제 시스템에서 디지털 인증서(Digital Certificate)를 적용하는 방법을 설명합니다.
+나이스페이먼츠에서 현재 사용중인 보안 인증서(DigiCert Global Root CA)의 만료 및 보안 정책 강화에 따라 'DigiCert Global Root G2' 인증서로 변경됩니다.
+이에 따라 가맹점에서 사용하는 인증서가 구버전 인증서(CA)인 경우 통신이 실패하여 결제가 진행되지 않을 수 있습니다.
+디지털 인증서는 보안 통신을 보장하고 데이터 위변조를 방지하기 위해 필수적입니다. 본 문서는 SSL/TLS 인증서 설정, API 호출 환경 구성, 그리고 인증서 관련 예외 처리를 다룹니다.
+
+## 준비사항
+- **가맹점 관리자 계정**: NICEPAY 가맹점 관리자 페이지에서 클라이언트 키와 시크릿 키를 발급받아야 합니다.
+- **SSL/TLS 인증서**: 유효한 SSL/TLS 인증서를 준비합니다.
+- **서버 환경**: HTTPS 통신이 가능한 웹 애플리케이션 서버(TLS 1.2 이상 지원).
+- **방화벽 설정**: NICEPAY API 호출을 위해 필요한 IP와 포트(예: 121.133.126.56:443, 211.47.33.56:443)를 방화벽에서 허용.[](https://developers.nicepay.co.kr/manual-pc.php)
+
+### 방화벽 설정 확인
+```bash
+#### 결제창
+nslookup web.nicepay.co.kr
+telnet 211.33.136.86 80
+telnet 211.33.136.86 443
+
+nslookup pg-web.nicepay.co.kr
+telnet 121.133.126.46 80
+telnet 121.133.126.46 443
+
+nslookup dc1-web.nicepay.co.kr
+telnet 121.133.126.46 80
+telnet 121.133.126.46 443
+
+nslookup dc2-web.nicepay.co.kr
+telnet 211.44.32.46 80
+telnet 211.44.32.46 443
+
+#### WEBAPI
+nslookup webapi.nicepay.co.kr
+telnet 121.133.126.56 80
+telnet 121.133.126.56 443
+
+nslookup pg-api.nicepay.co.kr
+telnet 121.133.126.56 80
+telnet 121.133.126.56 443
+
+nslookup pg-pay.nicepay.co.kr
+telnet 121.133.126.56 80
+telnet 121.133.126.56 443
+
+nslookup dc1-api.nicepay.co.kr
+telnet 121.133.126.56 80
+telnet 121.133.126.56 443
+
+nslookup dc2-api.nicepay.co.kr
+telnet 211.44.32.56 80
+telnet 211.44.32.56 443
+
+
+#### 대사
+nslookup pg.nicepay.co.kr
+telnet 121.133.126.47 80
+telnet 121.133.126.47 443
+
+nslookup data.nicepay.co.kr
+telnet 121.133.126.34 80
+telnet 121.133.126.34 443
+
+#### 비대면 (ForStart)
+nslookup pay.nicepay.co.kr
+telnet 121.133.126.85 80
+telnet 121.133.126.85 443
+
+nslookup api.nicepay.co.kr
+telnet 121.133.126.83 80
+telnet 121.133.126.83 443
+
+nslookup sandbox-pay.nicepay.co.kr
+telnet 121.133.126.84 80
+telnet 121.133.126.84 443
+
+nslookup sandbox-api.nicepay.co.kr
+telnet 121.133.126.84 80
+telnet 121.133.126.84 443
+
+#### 자금이체, 계좌점유인증 등 서비스
+nslookup service-api.nicepay.co.kr
+telnet 121.133.126.81 80
+telnet 121.133.126.81 443
+```
+> **참고**: 방화벽 설정이 올바르게 적용되었는지 확인하세요. SSL 인증서가 없거나 만료된 경우 API 호출이 실패할 수 있습니다.[](https://developers.nicepay.co.kr/manual-pc.php)
+
+## 디지털 인증서 적용 절차
+
+### 1. 📥 인증서 설치
+1. **인증서 다운로드**
+  - DigiCert Global Root G2 인증서는 다음 URL에서 내려받을 수 있습니다:  
+  `https://cacerts.digicert.com/DigiCertGlobalRootG2.crt.pem`
+
+2. **서버에 인증서 설치**:
+   - 웹 서버(예: Apache, Nginx)에 인증서 파일(.crt)과 개인 키(.key)를 설치합니다.
+   - 중간 인증서(Intermediate CA)가 필요한 경우 함께 설치합니다.
+   - 예: Apache 설정
+     ```apache
+     SSLCertificateFile /인증서 경로/your_domain.crt
+     SSLCertificateKeyFile /인증서 경로/your_domain.key
+     SSLCertificateChainFile /인증서 경로/intermediate.crt
+     ```
+3. **HTTPS 활성화**: 서버에서 443 포트를 열고 HTTPS 프로토콜을 활성화합니다.
+
+## 🛠 언어별 설치 방법
+
+### Java (JDK 사용)
+
+1. 설치 여부 확인:
+   ```bash
+   keytool -list -v -keystore $JAVA_HOME/jre/lib/security/cacerts | grep "DigiCert Global Root G2"
+   ```
+2. 수동 설치:
+   ```bash
+   keytool -importcert      -keystore $JAVA_HOME/jre/lib/security/cacerts      -storepass [패스워드]      -trustcacerts      -alias digicert_global_root_g2      -file [경로]/DigiCertGlobalRootG2.crt.pem      -noprompt
+   ```
+3. 재확인: 1번 명령어 반복 실행
+
+### PHP
+
+- `php.ini`에서 `curl.cainfo` 또는 `openssl.cafile`에 `.pem` 경로 지정
+- 또는 PHP 코드 내 `CURLOPT_CAINFO` 사용
+
+### Node.js
+
+- `https.request` 시 `ca` 옵션 지정
+- 또는 시스템에 G2 인증서를 추가
+
+## 🖥 OS 및 브라우저 설치 가이드
+
+### Linux (CentOS / Ubuntu 등)
+
+- CentOS/RHEL: `/etc/pki/ca-trust/source/anchors/`에 `.crt` 복사 후 `update-ca-trust extract`
+- Ubuntu: `/usr/local/share/ca-certificates/`에 `.crt` 복사 후 `update-ca-certificates`
+
+### Windows
+
+- `certmgr.msc` 실행 후 신뢰할 수 있는 루트 인증기관에 등록
+
+## 🔍 참고 사항
+
+- JDK 1.8.0_361 이상은 기본 포함
+- JDK 1.7 이하 및 폐쇄망 환경은 수동 설치 필수
+- 브라우저 호환성: IE/Edge/Chrome (Windows), macOS X 10.10+, Firefox 32+, Android 5.0+ 등
+
+## ✅ 요약
+
+| 항목          | 내용                                   |
+|--------------|----------------------------------------|
+| 인증서        | DigiCert Global Root G2                |
+| 다운로드 URL  | https://cacerts.digicert.com/DigiCertGlobalRootG2.crt.pem |
+| 설치 대상     | Java, PHP, Node.js, OS                 |
+| 주의사항      | JDK/Node 버전, 폐쇄망 환경 고려 필요       |

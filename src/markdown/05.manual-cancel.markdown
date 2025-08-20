@@ -1,0 +1,1213 @@
+## 승인 취소 프로세스
+**HTTP 요청 정보**
+- **URL**: `https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp`
+- **Method**: POST
+- **Content-Type**: `application/x-www-form-urlencoded`
+- **Encoding**: `euc-kr`
+- 결제 취소 API는 서비스에 따라 도메인이 다름 따라서 정확한 도메인 확인 필요
+- 결제 취소 요청 및 응답 시 모든 값은 server-side에서 처리해야 하며 민감 정보가 외부에 노출되지 않도록 주의 필요
+
+### 승인 취소 요청 파라미터
+| 항목               | 길이 | 필수 | 설명 |
+|-------------------|------|------|------|
+| TID               | 30B | Y | 거래 ID |
+| MID               | 10B | Y | 가맹점 ID |
+| Moid              | 64B | Y | 주문번호 (부분 취소 시 중복취소 방지를 위해 설정) (별도 계약 필요) |
+| CancelAmt         | 12B | Y | 취소금액 |
+| CancelMsg         | 100B | Y | 취소사유 (euc-kr) |
+| PartialCancelCode | 1B | Y | 0:전체 취소, 1:부분 취소(별도 계약 필요) |
+| EdiDate           | 14B | Y | 전문생성일시 (YYYYMMDDHHMMSS) |
+| SignData          | 256B | Y | hex(sha256(MID + CancelAmt + EdiDate + MerchantKey)) |
+| CharSet           | 10B |  | 인증 응답 인코딩 (euc-kr(default) / utf-8) |
+| EdiType           | 10B |  | 응답전문 유형 (JSON / KV) *KV:Key=value |
+| MallReserved      | 500B |  | 가맹점 여분 필드 |
+| RefundAcctNo      | 16B |  | 가상계좌, 휴대폰 익월 환불 Only 환불계좌번호 (숫자만) |
+| RefundBankCd      | 3B |  | 가상계좌, 휴대폰 익월 환불 Only 환불계좌코드 (*은행코드 참고) |
+| RefundAcctNm      | 10B |  | 가상계좌, 휴대폰 익월 환불 Only 환불계좌주명 (euc-kr) |
+
+### 승인 취소 응답 파라미터
+| 항목          | 길이 | 필수 | 설명 |
+|--------------|------|------|------|
+| ResultCode   | 4B | Y | 취소 결과 코드 |
+| ResultMsg    | 100B | Y | 취소 결과 메시지 |
+| CancelAmt    | 12B | Y | 취소 금액 (예, 1000원인 경우 -> 000000001000) |
+| MID          | 10B | Y | 가맹점 ID |
+| Moid         | 64B | Y | 가맹점 주문번호 |
+| Signature    | 500B |  | `hex(sha256(TID + MID + CancelAmt + MerchantKey))`, 위변조 검증 데이터 |
+| PayMethod    | 10B |  | CARD: 신용카드, BANK: 계좌이체, VBANK: 가상계좌, CELLPHONE : 휴대폰결제 |
+| TID          | 30B |  | 거래 ID |
+| CancelDate   | 8B |  | 취소일자 (YYYYMMDD) |
+| CancelTime   | 6B |  | 취소시간 (HHmmss) |
+| CancelNum    | 8B |  | 취소번호 |
+| RemainAmt    | 12B |  | 취소 후 잔액 (예, 잔액이 1000원인 경우 -> 000000001000) |
+| MallReserved | 500B |  | 가맹점 여분 필드 |
+
+### 1. Java/JSP 구현
+
+```jsp
+<%@ page contentType="text/html; charset=utf-8"%>
+<%@ page import="java.util.Date" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.Iterator" %>
+<%@ page import="java.io.PrintWriter" %>
+<%@ page import="java.io.BufferedReader" %>
+<%@ page import="java.io.InputStreamReader" %>
+<%@ page import="java.net.URL" %>
+<%@ page import="java.net.URLEncoder" %>
+<%@ page import="java.net.HttpURLConnection" %>
+<%@ page import="java.text.SimpleDateFormat" %>
+<%@ page import="java.security.MessageDigest" %>
+<%@ page import="org.json.simple.JSONObject" %>
+<%@ page import="org.json.simple.parser.JSONParser" %>
+<%@ page import="org.apache.commons.codec.binary.Hex" %>
+<%
+request.setCharacterEncoding("utf-8"); 
+
+/*
+****************************************************************************************
+* <취소요청 파라미터>
+* 취소시 전달하는 파라미터입니다.
+* 샘플페이지에서는 기본(필수) 파라미터만 예시되어 있으며, 
+* 추가 가능한 옵션 파라미터는 연동메뉴얼을 참고하세요.
+****************************************************************************************
+*/
+String tid 					= (String)request.getParameter("TID");	// 거래 ID
+String cancelAmt 			= (String)request.getParameter("CancelAmt");	// 취소금액
+String partialCancelCode 	= (String)request.getParameter("PartialCancelCode"); 	// 부분취소여부
+String mid 					= "nicepay00m";	// 상점 ID
+String moid					= "nicepay_api_3.0_test";	// 주문번호
+String cancelMsg 			= "고객요청";	// 취소사유
+
+/*
+****************************************************************************************
+* <해쉬암호화> (수정하지 마세요)
+* SHA-256 해쉬암호화는 거래 위변조를 막기위한 방법입니다. 
+****************************************************************************************
+*/
+DataEncrypt sha256Enc 	= new DataEncrypt();
+String merchantKey 		= "EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3b2lurNYkVXrZ7Z1AoqQnXI3eLuaUFyoRNC6FkrzVjceg=="; // 상점키
+String ediDate			= getyyyyMMddHHmmss();
+String signData 		= sha256Enc.encrypt(mid + cancelAmt + ediDate + merchantKey);
+
+/*
+****************************************************************************************
+* <취소 요청>
+* 취소에 필요한 데이터 생성 후 server to server 통신을 통해 취소 처리 합니다.
+* 취소 사유(CancelMsg) 와 같이 한글 텍스트가 필요한 파라미터는 euc-kr encoding 처리가 필요합니다.
+****************************************************************************************
+*/
+StringBuffer requestData = new StringBuffer();
+requestData.append("TID=").append(tid).append("&");
+requestData.append("MID=").append(mid).append("&");
+requestData.append("Moid=").append(moid).append("&");
+requestData.append("CancelAmt=").append(cancelAmt).append("&");
+requestData.append("CancelMsg=").append(URLEncoder.encode(cancelMsg, "euc-kr")).append("&");
+requestData.append("PartialCancelCode=").append(partialCancelCode).append("&");
+requestData.append("EdiDate=").append(ediDate).append("&");
+requestData.append("CharSet=").append("utf-8").append("&");
+requestData.append("SignData=").append(signData);
+String resultJsonStr = connectToServer(requestData.toString(), "https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp");
+
+/*
+****************************************************************************************
+* <취소 결과 파라미터 정의>
+* 샘플페이지에서는 취소 결과 파라미터 중 일부만 예시되어 있으며, 
+* 추가적으로 사용하실 파라미터는 연동메뉴얼을 참고하세요.
+****************************************************************************************
+*/
+String ResultCode 	= ""; String ResultMsg 	= ""; String CancelAmt 	= "";
+String CancelDate 	= ""; String CancelTime = ""; String TID 		= "";
+
+if("9999".equals(resultJsonStr)){
+	ResultCode 	= "9999";
+	ResultMsg	= "통신실패";
+}else{
+	HashMap resultData = jsonStringToHashMap(resultJsonStr);
+	ResultCode 	= (String)resultData.get("ResultCode");	// 결과코드 (취소성공: 2001, 취소성공(LGU 계좌이체):2211)
+	ResultMsg 	= (String)resultData.get("ResultMsg");	// 결과메시지
+	CancelAmt 	= (String)resultData.get("CancelAmt");	// 취소금액
+	CancelDate 	= (String)resultData.get("CancelDate");	// 취소일
+	CancelTime 	= (String)resultData.get("CancelTime");	// 취소시간
+	TID 		= (String)resultData.get("TID");		// 거래아이디 TID
+}
+%>
+<!DOCTYPE html>
+<html>
+<head>
+<title>NICEPAY CANCEL RESULT(UTF-8)</title>
+<meta charset="utf-8">
+</head>
+<body> 
+	<table>												  
+		<tr>
+			<th>취소 결과 내용</th>
+			<td>[<%=ResultCode%>]<%=ResultMsg%></td>
+		</tr>
+		<tr>
+			<th>거래 아이디</th>
+			<td><%=TID%></td>
+		</tr>
+		<tr>
+			<th>취소 금액</th>
+			<td><%=CancelAmt%></td>
+		</tr>
+		<tr>
+			<th>취소일</th>
+			<td><%=CancelDate%></td>
+		</tr>
+		<tr>
+			<th>취소시간</th>
+			<td><%=CancelTime%></td>
+		</tr>
+	</table>
+</body>
+</html>
+<%!
+public final synchronized String getyyyyMMddHHmmss(){
+	SimpleDateFormat yyyyMMddHHmmss = new SimpleDateFormat("yyyyMMddHHmmss");
+	return yyyyMMddHHmmss.format(new Date());
+}
+
+//SHA-256 형식으로 암호화
+public class DataEncrypt{
+	MessageDigest md;
+	String strSRCData = "";
+	String strENCData = "";
+	String strOUTData = "";
+	
+	public DataEncrypt(){ }
+	public String encrypt(String strData){
+		String passACL = null;
+		MessageDigest md = null;
+		try{
+			md = MessageDigest.getInstance("SHA-256");
+			md.reset();
+			md.update(strData.getBytes());
+			byte[] raw = md.digest();
+			passACL = encodeHex(raw);
+		}catch(Exception e){
+			System.out.print("암호화 에러" + e.toString());
+		}
+		return passACL;
+	}
+	
+	public String encodeHex(byte [] b){
+		char [] c = Hex.encodeHex(b);
+		return new String(c);
+	}
+}
+
+//server to server 통신
+public String connectToServer(String data, String reqUrl) throws Exception{
+	HttpURLConnection conn 		= null;
+	BufferedReader resultReader = null;
+	PrintWriter pw 				= null;
+	URL url 					= null;
+	
+	int statusCode = 0;
+	StringBuffer recvBuffer = new StringBuffer();
+	try{
+		url = new URL(reqUrl);
+		conn = (HttpURLConnection) url.openConnection();
+		conn.setRequestMethod("POST");
+		conn.setConnectTimeout(3000);
+		conn.setReadTimeout(5000);
+		conn.setDoOutput(true);
+		
+		pw = new PrintWriter(conn.getOutputStream());
+		pw.write(data);
+		pw.flush();
+		
+		statusCode = conn.getResponseCode();
+		resultReader = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
+		for(String temp; (temp = resultReader.readLine()) != null;){
+			recvBuffer.append(temp).append("\n");
+		}
+		
+		if(!(statusCode == HttpURLConnection.HTTP_OK)){
+			throw new Exception();
+		}
+		
+		return recvBuffer.toString().trim();
+	}catch (Exception e){
+		return "9999";
+	}finally{
+		recvBuffer.setLength(0);
+		
+		try{
+			if(resultReader != null){
+				resultReader.close();
+			}
+		}catch(Exception ex){
+			resultReader = null;
+		}
+		
+		try{
+			if(pw != null) {
+				pw.close();
+			}
+		}catch(Exception ex){
+			pw = null;
+		}
+		
+		try{
+			if(conn != null) {
+				conn.disconnect();
+			}
+		}catch(Exception ex){
+			conn = null;
+		}
+	}
+}
+
+//JSON String -> HashMap 변환
+private static HashMap jsonStringToHashMap(String str) throws Exception{
+	HashMap dataMap = new HashMap();
+	JSONParser parser = new JSONParser();
+	try{
+		Object obj = parser.parse(str);
+		JSONObject jsonObject = (JSONObject)obj;
+
+		Iterator<String> keyStr = jsonObject.keySet().iterator();
+		while(keyStr.hasNext()){
+			String key = keyStr.next();
+			Object value = jsonObject.get(key);
+			
+			dataMap.put(key, value);
+		}
+	}catch(Exception e){
+		
+	}
+	return dataMap;
+}
+%>
+```
+
+### 2. PHP 구현
+
+```php
+<?php
+header("Content-Type:text/html; charset=utf-8;"); 
+
+$merchantKey = "EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3b2lurNYkVXrZ7Z1AoqQnXI3eLuaUFyoRNC6FkrzVjceg==";
+$mid = "nicepay00m";
+$moid = "nicepay_api_3.0_test";		
+$cancelMsg = "고객요청";
+$tid = $_POST['TID'];			
+$cancelAmt = $_POST['CancelAmt']; 
+$partialCancelCode = $_POST['PartialCancelCode'];
+
+$ediDate = date("YmdHis");
+$signData = bin2hex(hash('sha256', $mid . $cancelAmt . $ediDate . $merchantKey, true));
+
+try{
+	$data = Array(
+		'TID' => $tid,
+		'MID' => $mid,
+		'Moid' => $moid,
+		'CancelAmt' => $cancelAmt,
+		'CancelMsg' => iconv("UTF-8", "EUC-KR", $cancelMsg),
+		'PartialCancelCode' => $partialCancelCode,
+		'EdiDate' => $ediDate,
+		'SignData' => $signData,
+		'CharSet' => 'utf-8'
+	);	
+	$response = reqPost($data, "https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp"); //취소 API 호출
+	jsonRespDump($response);
+	
+}catch(Exception $e){
+	$e->getMessage();
+	$ResultCode = "9999";
+	$ResultMsg = "통신실패";
+}
+
+// API CALL foreach 예시
+function jsonRespDump($resp){
+	$respArr = json_decode($resp);
+	foreach ( $respArr as $key => $value ){
+		if($key == "Data"){
+			echo decryptDump ($value, $merchantKey)."<br />";
+		}else{
+			echo "$key=". $value."<br />";
+		}
+	}
+}
+
+//Post api call
+function reqPost(Array $data, $url){
+	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_URL, $url);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);					//connection timeout 15 
+	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+	curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));	//POST data
+	curl_setopt($ch, CURLOPT_POST, true);
+	$response = curl_exec($ch);
+	curl_close($ch);	 
+	return $response;
+}
+?>
+```
+
+### 3. C# (ASP.NET) 구현
+
+```csharp
+using System;
+using System.Web.UI;
+using System.Security.Cryptography;
+using System.Text;
+using System.Net;
+using System.IO;
+using System.Web;
+public partial class cancelResult : System.Web.UI.Page{
+    protected System.Web.UI.WebControls.Literal Res_ResultCode;
+    protected System.Web.UI.WebControls.Literal Res_ResultMsg;
+    protected System.Web.UI.WebControls.Literal Res_TID;
+
+    protected string tid;
+    protected string cancelAmt;
+    protected string partialCancelCode;
+    protected string mid;
+    protected string moid;
+    protected string cancelMsg;
+    protected string merchantKey;
+    protected string ediDate;
+    protected string signData;
+    protected string resultCode;
+    protected string resultMsg;
+    protected string cancelDate;
+    protected string cancelTime;
+
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        if (!Page.IsPostBack)
+        {
+            resultData();
+        }
+    }
+
+    protected void resultData()
+    {
+        merchantKey = "EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3b2lurNYkVXrZ7Z1AoqQnXI3eLuaUFyoRNC6FkrzVjceg==";
+        tid = Request.Params["TID"];
+        cancelAmt = Request.Params["CancelAmt"];
+        partialCancelCode = Request.Params["PartialCancelCode"];
+        mid = "nicepay00m";
+        moid = "nicepay_api_3.0_test";
+        cancelMsg = "고객취소";
+
+        ediDate = String.Format("{0:yyyyMMddHHmmss}", DateTime.Now);
+        signData = stringToSHA256(mid + cancelAmt + ediDate + merchantKey);
+
+        //Make post query string
+        var postData = "TID=" + tid;
+        postData += "&MID=" + mid;
+        postData += "&Moid=" + moid;
+        postData += "&CancelAmt=" + Uri.EscapeDataString(cancelAmt);
+        postData += "&CancelMsg=" + cancelMsg;
+        postData += "&PartialCancelCode=" + partialCancelCode;
+        postData += "&EdiDate=" + ediDate;
+        postData += "&EdiType=" + "KV";
+        postData += "&SignData=" + Uri.EscapeDataString(signData);
+
+        //Call cancel_process.jsp API
+        var result = apiRequest("https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp", postData);
+
+        //Stream encode
+        var queryStr = streamEncode(result);
+
+        //ParseQueryString
+        var response = HttpUtility.ParseQueryString(queryStr);
+
+        //Response data to view
+        Res_ResultCode.Text = response["ResultCode"];
+        Res_ResultMsg.Text = response["ResultMsg"];
+        Res_TID.Text = response["TID"];
+    }
+
+    public String stringToSHA256(String plain)
+    {
+        SHA256Managed SHA256 = new SHA256Managed();
+        String getHashString = BitConverter.ToString(SHA256.ComputeHash(Encoding.UTF8.GetBytes(plain))).ToLower();
+        return getHashString.Replace("-", "");
+    }
+
+    public HttpWebResponse apiRequest(String url, String postData)
+    {
+        var request = (HttpWebRequest)WebRequest.Create(url);
+
+        System.Text.Encoding euckr = System.Text.Encoding.GetEncoding(51949);
+        var data = euckr.GetBytes(postData);
+
+        request.Method = "POST";
+        request.ContentType = "application/x-www-form-urlencoded";
+        request.ContentLength = data.Length;
+
+        using (var stream = request.GetRequestStream())
+        {
+            stream.Write(data, 0, data.Length);
+        }
+
+        var result = (HttpWebResponse)request.GetResponse();
+        return result;
+    }
+
+    public String streamEncode(HttpWebResponse result)
+    {
+        Stream ReceiveStream = result.GetResponseStream();
+        Encoding encode = System.Text.Encoding.GetEncoding(51949);
+
+        StreamReader sr = new StreamReader(ReceiveStream, encode);
+
+        Char[] read = new Char[8096];
+        int count = sr.Read(read, 0, 8096);
+        Char[] chTemp = new Char[count];
+        for (int i = 0; i < count; ++i)
+            chTemp[i] = read[i];
+
+        Byte[] buffer = encode.GetBytes(chTemp);
+        String strOut = encode.GetString(buffer);
+
+        return strOut;
+    }
+}
+```
+
+### 4. node 구현
+
+```nodejs
+const express = require('express')
+const axios = require('axios')
+const app = express()
+const port = 3000
+const iconv = require('iconv-lite')
+const bodyParser = require('body-parser')
+const CryptoJS = require('crypto-js')
+const format = require('date-format')
+const fs = require('fs')
+const ejs = require('ejs')
+
+const cancelRequest = fs.readFileSync('./public/cancelRequest.ejs', 'utf-8');
+
+const merchantKey = 'EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3b2lurNYkVXrZ7Z1AoqQnXI3eLuaUFyoRNC6FkrzVjceg==';
+const merchantID = 'nicepay00m';
+
+const ediDate = format.asString('yyyyMMddhhmmss', new Date());
+const amt = '1004';
+const returnURL = 'http://localhost:3000/authReq';
+const goodsName = '나이스상품';
+const moid = 'nice_api_test_3.0';
+const buyerName = '구매자';
+const buyerEmail = 'happy@day.com';
+const buyerTel = '00000000000';
+
+app.use(express.static('public'))
+app.use(bodyParser.urlencoded({ extended: false }))
+
+//route for cancel
+app.get('/cancel', function(req, res) {
+    const index = ejs.render(cancelRequest, {
+
+    })
+
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+    res.write(index)
+    res.end()
+})
+
+//cancel request
+app.post('/cancelReq', async function(req, res) {
+
+    const ediDate = format.asString('yyyyMMddhhmmss', new Date());
+
+    const tid = req.body.TID;
+    const moid = 'moid' + ediDate;
+    const cancelAmt = req.body.CancelAmt;
+    const cancelMsg = "test"; //취소 메시지 한글 처리하는경우 인코딩 EUC-KR로 요청, iconv-lite 사용 불가
+    const partialCancelCode = req.body.PartialCancelCode;
+    
+	const signData = getSignData(merchantID + cancelAmt + ediDate + merchantKey).toString();
+
+    // 결제 취소 API 요청 후 응답을 받아 console과 브라우저에 출력합니다.
+    try {
+        const cancelResponse = await axios({
+            url: 'https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp',
+            method: 'POST',
+            headers: {
+                'User-Agent': 'Super Agent/0.0.1',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=euc-kr',
+            },
+            data: {
+                TID: tid,
+                MID: merchantID,
+                Moid: moid,
+                CancelAmt: cancelAmt,
+                CancelMsg: cancelMsg, // 취소 메세지 한글 처리 시 인코딩 euc-kr로 요청.
+                PartialCancelCode: partialCancelCode,
+                EdiDate: ediDate,
+                SignData: signData,
+                CharSet: 'utf-8'    
+            }
+        });
+
+        res.json(cancelResponse.data);
+        console.log('취소 결과 :', cancelResponse.data);
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    };
+})
+
+
+function getSignData(str) {
+    const encrypted = CryptoJS.SHA256(str);
+    return encrypted;
+}
+
+app.listen(port, () => console.log('**\n\nPAYMENT TEST URL:: localhost:3000/payment\nCANCEL TEST URL:: localhost:3000/cancel \n\n**'))
+```
+
+### 5. python 구현
+
+```python
+from flask import Flask, render_template, request
+from datetime import datetime
+import hashlib, requests, sys, json
+from base64 import b64encode, b64decode
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+from Crypto.Random import get_random_bytes
+
+app = Flask(__name__)
+
+def getSignData(str):
+    encoded_str = str.encode()
+    EncryptData = hashlib.sha256(encoded_str).hexdigest()
+    return EncryptData
+
+def getEdiDate():
+    YYYYmmddHHMMSS = datetime.today().strftime("%Y%m%d%H%M%S")
+    return str(YYYYmmddHHMMSS)
+
+##Req variables
+Amt         = "1004"                          # 결제상품금액
+BuyerEmail  = "happy@day.co.kr"               # 구매자메일주소
+BuyerName   = "나이스"                        # 구매자명 
+BuyerTel    = "01000000000"                   # 구매자연락처 
+EdiDate     = getEdiDate()                    # 거래 날짜   
+GoodsName   = "상품"                          # 결제상품명
+MerchantKey = "EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3b2lurNYkVXrZ7Z1AoqQnXI3eLuaUFyoRNC6FkrzVjceg==" #상점키
+MID         = "nicepay00m"                    # 상점아이디
+Moid        = "mnoid1234567890"               # 상품주문번호  
+CancelPwd   = "123456"                        # 취소비밀번호       
+ReturnURL   = "http://localhost:5000/authReq" # Mobile only
+
+@app.route('/cancel')
+def reqCancel():
+    return render_template(
+        'cancelRequest.html',
+        title="hello world"
+    )
+
+#Cancel
+@app.route('/cancelReq', methods=['POST'])
+def cancelReq():   
+    TID=request.form['TID']
+    CancelAmt=request.form['CancelAmt']
+    PartialCancelCode=request.form['PartialCancelCode']
+    Moid="test"
+    CancelMsgKr="고객요청"
+    CancelMsg=CancelMsgKr.encode("euc-kr","ignore") 
+    EdiDate=getEdiDate()
+    SignData=getSignData(MID + CancelAmt + EdiDate + MerchantKey)
+
+    data = {
+        'TID': TID,
+        'MID': MID,
+        'Moid': Moid,
+        'CancelAmt': CancelAmt,
+        'CancelMsg': CancelMsg, #취소 메시지 한글 처리하는경우 인코딩 EUC-KR로 요청
+        'PartialCancelCode': PartialCancelCode,
+        'EdiDate': EdiDate,
+        'SignData': SignData
+    }
+    resDict = authRequest("https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp", data)
+    return render_template(
+        'result.html',
+        result=resDict
+    )         
+
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+---
+
+## 발급 취소/입금 환불 요청
+
+### 발급 취소/입금 환불 요청
+
+**HTTP 요청 정보**
+- **URL**: `https://webapi.nicepay.co.kr/webapi/cancel_process.jsp`
+- **Method**: POST
+- **Content-Type**: `application/x-www-form-urlencoded`
+- **Encoding**: `euc-kr`
+- 가상계좌 발급 취소 및 입금 환불 시 결제 취소 API와 동일한 스펙으로 취소 요청을 진행
+- 고객 입금 전 발급된 가상계좌에 대하여 취소 시에는 PartialCancelCode를 0으로 설정
+- 발급된 가상계좌로 고객이 입금 후 환불 시에는 RefundAcctNm(환불계좌주명), RefundAcctNo(환불계좌번호), RefundBankCd(환불은행코드)를 필수로 입력
+- 가상계좌 발급 취소 및 입금 환불 API는 서비스에 따라 도메인이 다름 따라서 정확한 도메인 확인 필요
+- 가상계좌 발급 취소 및 입금 환불 요청 및 응답 시 모든 값은 server-side에서 처리해야 하며 민감 정보가 외부에 노출되지 않도록 주의 필요
+
+### 승인 취소 요청 파라미터
+| 항목               | 길이 | 필수 | 설명 |
+|-------------------|------|------|------|
+| TID               | 30B | Y | 거래 ID |
+| MID               | 10B | Y | 가맹점 ID |
+| Moid              | 64B | Y | 주문번호 (부분 취소 시 중복취소 방지를 위해 설정) (별도 계약 필요) |
+| CancelAmt         | 12B | Y | 취소금액 |
+| CancelMsg         | 100B | Y | 취소사유 (euc-kr) |
+| PartialCancelCode | 1B | Y | 0:전체 취소, 1:부분 취소(별도 계약 필요) |
+| EdiDate           | 14B | Y | 전문생성일시 (YYYYMMDDHHMMSS) |
+| SignData          | 256B | Y | hex(sha256(MID + CancelAmt + EdiDate + MerchantKey)) |
+| CharSet           | 10B |  | 인증 응답 인코딩 (euc-kr(default) / utf-8) |
+| EdiType           | 10B |  | 응답전문 유형 (JSON / KV) *KV:Key=value |
+| MallReserved      | 500B |  | 가맹점 여분 필드 |
+| RefundAcctNo      | 16B |  | 가상계좌, 휴대폰 익월 환불 Only 환불계좌번호 (숫자만) |
+| RefundBankCd      | 3B |  | 가상계좌, 휴대폰 익월 환불 Only 환불계좌코드 (*은행코드 참고) |
+| RefundAcctNm      | 10B |  | 가상계좌, 휴대폰 익월 환불 Only 환불계좌주명 (euc-kr) |
+
+### 승인 취소 응답 파라미터
+| 항목          | 길이 | 필수 | 설명 |
+|--------------|------|------|------|
+| ResultCode   | 4B   | Y | 취소 결과 코드 |
+| ResultMsg    | 100B | Y | 취소 결과 메시지 |
+| CancelAmt    | 12B  | Y | 취소 금액 (예, 1000원인 경우 -> 000000001000) |
+| MID          | 10B  | Y | 가맹점 ID |
+| Moid         | 64B  | Y | 가맹점 주문번호 |
+| Signature    | 500B |  | `hex(sha256(TID + MID + CancelAmt + MerchantKey))`, 위변조 검증 데이터 |
+| PayMethod    | 10B  |  | CARD: 신용카드, BANK: 계좌이체, VBANK: 가상계좌, CELLPHONE: 휴대폰결제 |
+| TID          | 30B  |  | 거래 ID |
+| CancelDate   | 8B   |  | 취소일자 (YYYYMMDD) |
+| CancelTime   | 6B   |  | 취소시간 (HHmmss) |
+| CancelNum    | 8B   |  | 취소번호 |
+| RemainAmt    | 12B  |  | 취소 후 잔액 (예, 잔액이 1000원인 경우 -> 000000001)
+| MallReserved | 500B |  | 가맹점 여분 필드 |
+
+### 1. Java/JSP 구현
+
+```jsp
+<%@ page contentType="text/html; charset=utf-8"%>
+<%@ page import="java.util.Date" %>
+<%@ page import="java.util.HashMap" %>
+<%@ page import="java.util.Iterator" %>
+<%@ page import="java.io.PrintWriter" %>
+<%@ page import="java.io.BufferedReader" %>
+<%@ page import="java.io.InputStreamReader" %>
+<%@ page import="java.net.URL" %>
+<%@ page import="java.net.URLEncoder" %>
+<%@ page import="java.net.HttpURLConnection" %>
+<%@ page import="java.text.SimpleDateFormat" %>
+<%@ page import="java.security.MessageDigest" %>
+<%@ page import="org.json.simple.JSONObject" %>
+<%@ page import="org.json.simple.parser.JSONParser" %>
+<%@ page import="org.apache.commons.codec.binary.Hex" %>
+<%
+request.setCharacterEncoding("utf-8"); 
+
+/*
+****************************************************************************************
+* <취소요청 파라미터>
+* 취소시 전달하는 파라미터입니다.
+* 샘플페이지에서는 기본(필수) 파라미터만 예시되어 있으며, 
+* 추가 가능한 옵션 파라미터는 연동메뉴얼을 참고하세요.
+****************************************************************************************
+*/
+String tid 					= (String)request.getParameter("TID");	// 거래 ID
+String cancelAmt 			= (String)request.getParameter("CancelAmt");	// 취소금액
+String partialCancelCode 	= (String)request.getParameter("PartialCancelCode"); 	// 부분취소여부
+String mid 					= "nicepay00m";	// 상점 ID
+String moid					= "nicepay_api_3.0_test";	// 주문번호
+String cancelMsg 			= "고객요청";	// 취소사유
+
+/*
+****************************************************************************************
+* <해쉬암호화> (수정하지 마세요)
+* SHA-256 해쉬암호화는 거래 위변조를 막기위한 방법입니다. 
+****************************************************************************************
+*/
+DataEncrypt sha256Enc 	= new DataEncrypt();
+String merchantKey 		= "EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3b2lurNYkVXrZ7Z1AoqQnXI3eLuaUFyoRNC6FkrzVjceg=="; // 상점키
+String ediDate			= getyyyyMMddHHmmss();
+String signData 		= sha256Enc.encrypt(mid + cancelAmt + ediDate + merchantKey);
+
+/*
+****************************************************************************************
+* <취소 요청>
+* 취소에 필요한 데이터 생성 후 server to server 통신을 통해 취소 처리 합니다.
+* 취소 사유(CancelMsg) 와 같이 한글 텍스트가 필요한 파라미터는 euc-kr encoding 처리가 필요합니다.
+****************************************************************************************
+*/
+StringBuffer requestData = new StringBuffer();
+requestData.append("TID=").append(tid).append("&");
+requestData.append("MID=").append(mid).append("&");
+requestData.append("Moid=").append(moid).append("&");
+requestData.append("CancelAmt=").append(cancelAmt).append("&");
+requestData.append("CancelMsg=").append(URLEncoder.encode(cancelMsg, "euc-kr")).append("&");
+requestData.append("PartialCancelCode=").append(partialCancelCode).append("&");
+requestData.append("EdiDate=").append(ediDate).append("&");
+requestData.append("CharSet=").append("utf-8").append("&");
+requestData.append("SignData=").append(signData);
+String resultJsonStr = connectToServer(requestData.toString(), "https://webapi.nicepay.co.kr/webapi/cancel_process.jsp");
+
+/*
+****************************************************************************************
+* <취소 결과 파라미터 정의>
+* 샘플페이지에서는 취소 결과 파라미터 중 일부만 예시되어 있으며, 
+* 추가적으로 사용하실 파라미터는 연동메뉴얼을 참고하세요.
+****************************************************************************************
+*/
+String ResultCode 	= ""; String ResultMsg 	= ""; String CancelAmt 	= "";
+String CancelDate 	= ""; String CancelTime = ""; String TID 		= "";
+
+if("9999".equals(resultJsonStr)){
+	ResultCode 	= "9999";
+	ResultMsg	= "통신실패";
+}else{
+	HashMap resultData = jsonStringToHashMap(resultJsonStr);
+	ResultCode 	= (String)resultData.get("ResultCode");	// 결과코드 (취소성공: 2001, 취소성공(LGU 계좌이체):2211)
+	ResultMsg 	= (String)resultData.get("ResultMsg");	// 결과메시지
+	CancelAmt 	= (String)resultData.get("CancelAmt");	// 취소금액
+	CancelDate 	= (String)resultData.get("CancelDate");	// 취소일
+	CancelTime 	= (String)resultData.get("CancelTime");	// 취소시간
+	TID 		= (String)resultData.get("TID");		// 거래아이디 TID
+}
+%>
+<!DOCTYPE html>
+<html>
+<head>
+<title>NICEPAY CANCEL RESULT(UTF-8)</title>
+<meta charset="utf-8">
+</head>
+<body> 
+	<table>												  
+		<tr>
+			<th>취소 결과 내용</th>
+			<td>[<%=ResultCode%>]<%=ResultMsg%></td>
+		</tr>
+		<tr>
+			<th>거래 아이디</th>
+			<td><%=TID%></td>
+		</tr>
+		<tr>
+			<th>취소 금액</th>
+			<td><%=CancelAmt%></td>
+		</tr>
+		<tr>
+			<th>취소일</th>
+			<td><%=CancelDate%></td>
+		</tr>
+		<tr>
+			<th>취소시간</th>
+			<td><%=CancelTime%></td>
+		</tr>
+	</table>
+</body>
+</html>
+<%!
+public final synchronized String getyyyyMMddHHmmss(){
+	SimpleDateFormat yyyyMMddHHmmss = new SimpleDateFormat("yyyyMMddHHmmss");
+	return yyyyMMddHHmmss.format(new Date());
+}
+
+//SHA-256 형식으로 암호화
+public class DataEncrypt{
+	MessageDigest md;
+	String strSRCData = "";
+	String strENCData = "";
+	String strOUTData = "";
+	
+	public DataEncrypt(){ }
+	public String encrypt(String strData){
+		String passACL = null;
+		MessageDigest md = null;
+		try{
+			md = MessageDigest.getInstance("SHA-256");
+			md.reset();
+			md.update(strData.getBytes());
+			byte[] raw = md.digest();
+			passACL = encodeHex(raw);
+		}catch(Exception e){
+			System.out.print("암호화 에러" + e.toString());
+		}
+		return passACL;
+	}
+	
+	public String encodeHex(byte [] b){
+		char [] c = Hex.encodeHex(b);
+		return new String(c);
+	}
+}
+
+//server to server 통신
+public String connectToServer(String data, String reqUrl) throws Exception{
+	HttpURLConnection conn 		= null;
+	BufferedReader resultReader = null;
+	PrintWriter pw 				= null;
+	URL url 					= null;
+	
+	int statusCode = 0;
+	StringBuffer recvBuffer = new StringBuffer();
+	try{
+		url = new URL(reqUrl);
+		conn = (HttpURLConnection) url.openConnection();
+		conn.setRequestMethod("POST");
+		conn.setConnectTimeout(3000);
+		conn.setReadTimeout(5000);
+		conn.setDoOutput(true);
+		
+		pw = new PrintWriter(conn.getOutputStream());
+		pw.write(data);
+		pw.flush();
+		
+		statusCode = conn.getResponseCode();
+		resultReader = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
+		for(String temp; (temp = resultReader.readLine()) != null;){
+			recvBuffer.append(temp).append("\n");
+		}
+		
+		if(!(statusCode == HttpURLConnection.HTTP_OK)){
+			throw new Exception();
+		}
+		
+		return recvBuffer.toString().trim();
+	}catch (Exception e){
+		return "9999";
+	}finally{
+		recvBuffer.setLength(0);
+		
+		try{
+			if(resultReader != null){
+				resultReader.close();
+			}
+		}catch(Exception ex){
+			resultReader = null;
+		}
+		
+		try{
+			if(pw != null) {
+				pw.close();
+			}
+		}catch(Exception ex){
+			pw = null;
+		}
+		
+		try{
+			if(conn != null) {
+				conn.disconnect();
+			}
+		}catch(Exception ex){
+			conn = null;
+		}
+	}
+}
+
+//JSON String -> HashMap 변환
+private static HashMap jsonStringToHashMap(String str) throws Exception{
+	HashMap dataMap = new HashMap();
+	JSONParser parser = new JSONParser();
+	try{
+		Object obj = parser.parse(str);
+		JSONObject jsonObject = (JSONObject)obj;
+
+		Iterator<String> keyStr = jsonObject.keySet().iterator();
+		while(keyStr.hasNext()){
+			String key = keyStr.next();
+			Object value = jsonObject.get(key);
+			
+			dataMap.put(key, value);
+		}
+	}catch(Exception e){
+		
+	}
+	return dataMap;
+}
+%>
+```
+
+### 2. PHP 구현
+
+```php
+<?php
+header("Content-Type:text/html; charset=utf-8;"); 
+
+$merchantKey = "EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3b2lurNYkVXrZ7Z1AoqQnXI3eLuaUFyoRNC6FkrzVjceg==";
+$mid = "nicepay00m";
+$moid = "nicepay_api_3.0_test";		
+$cancelMsg = "고객요청";
+$tid = $_POST['TID'];			
+$cancelAmt = $_POST['CancelAmt']; 
+$partialCancelCode = $_POST['PartialCancelCode'];
+
+$ediDate = date("YmdHis");
+$signData = bin2hex(hash('sha256', $mid . $cancelAmt . $ediDate . $merchantKey, true));
+
+try{
+	$data = Array(
+		'TID' => $tid,
+		'MID' => $mid,
+		'Moid' => $moid,
+		'CancelAmt' => $cancelAmt,
+		'CancelMsg' => iconv("UTF-8", "EUC-KR", $cancelMsg),
+		'PartialCancelCode' => $partialCancelCode,
+		'EdiDate' => $ediDate,
+		'SignData' => $signData,
+		'CharSet' => 'utf-8'
+	);	
+	$response = reqPost($data, "https://webapi.nicepay.co.kr/webapi/cancel_process.jsp"); //취소 API 호출
+	jsonRespDump($response);
+	
+}catch(Exception $e){
+	$e->getMessage();
+	$ResultCode = "9999";
+	$ResultMsg = "통신실패";
+}
+
+// API CALL foreach 예시
+function jsonRespDump($resp){
+	$respArr = json_decode($resp);
+	foreach ( $respArr as $key => $value ){
+		if($key == "Data"){
+			echo decryptDump ($value, $merchantKey)."<br />";
+		}else{
+			echo "$key=". $value."<br />";
+		}
+	}
+}
+
+//Post api call
+function reqPost(Array $data, $url){
+	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_URL, $url);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);					//connection timeout 15 
+	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+	curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));	//POST data
+	curl_setopt($ch, CURLOPT_POST, true);
+	$response = curl_exec($ch);
+	curl_close($ch);	 
+	return $response;
+}
+?>
+```
+
+### 3. C# (ASP.NET) 구현
+
+```csharp
+<?php
+header("Content-Type:text/html; charset=utf-8;"); 
+
+$merchantKey = "EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3b2lurNYkVXrZ7Z1AoqQnXI3eLuaUFyoRNC6FkrzVjceg==";
+$mid = "nicepay00m";
+$moid = "nicepay_api_3.0_test";		
+$cancelMsg = "고객요청";
+$tid = $_POST['TID'];			
+$cancelAmt = $_POST['CancelAmt']; 
+$partialCancelCode = $_POST['PartialCancelCode'];
+
+$ediDate = date("YmdHis");
+$signData = bin2hex(hash('sha256', $mid . $cancelAmt . $ediDate . $merchantKey, true));
+
+try{
+	$data = Array(
+		'TID' => $tid,
+		'MID' => $mid,
+		'Moid' => $moid,
+		'CancelAmt' => $cancelAmt,
+		'CancelMsg' => iconv("UTF-8", "EUC-KR", $cancelMsg),
+		'PartialCancelCode' => $partialCancelCode,
+		'EdiDate' => $ediDate,
+		'SignData' => $signData,
+		'CharSet' => 'utf-8'
+	);	
+	$response = reqPost($data, "https://webapi.nicepay.co.kr/webapi/cancel_process.jsp"); //취소 API 호출
+	jsonRespDump($response);
+	
+}catch(Exception $e){
+	$e->getMessage();
+	$ResultCode = "9999";
+	$ResultMsg = "통신실패";
+}
+
+// API CALL foreach 예시
+function jsonRespDump($resp){
+	$respArr = json_decode($resp);
+	foreach ( $respArr as $key => $value ){
+		if($key == "Data"){
+			echo decryptDump ($value, $merchantKey)."<br />";
+		}else{
+			echo "$key=". $value."<br />";
+		}
+	}
+}
+
+//Post api call
+function reqPost(Array $data, $url){
+	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_URL, $url);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);					//connection timeout 15 
+	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+	curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));	//POST data
+	curl_setopt($ch, CURLOPT_POST, true);
+	$response = curl_exec($ch);
+	curl_close($ch);	 
+	return $response;
+}
+?>
+```
+
+### 4. node 구현
+
+```nodejs
+const express = require('express')
+const axios = require('axios')
+const app = express()
+const port = 3000
+const iconv = require('iconv-lite')
+const bodyParser = require('body-parser')
+const CryptoJS = require('crypto-js')
+const format = require('date-format')
+const fs = require('fs')
+const ejs = require('ejs')
+
+
+const merchantKey = 'EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3b2lurNYkVXrZ7Z1AoqQnXI3eLuaUFyoRNC6FkrzVjceg==';
+const merchantID = 'nicepay00m';
+
+const ediDate = format.asString('yyyyMMddhhmmss', new Date());
+
+app.use(express.static('public'))
+app.use(bodyParser.urlencoded({ extended: false }))
+
+
+//cancel request
+app.post('/cancel', async function(req, res) {
+
+    const tid = '';
+    const moid = '';
+    const cancelAmt = '';
+    const cancelMsg = 'test'; //취소 메시지 한글 처리하는경우 인코딩 EUC-KR로 요청, iconv-lite 사용 불가
+    const partialCancelCode = '';
+    const signData = getSignData(merchantID + cancelAmt + ediDate + merchantKey).toString();
+
+	// 결제 취소 API 요청 후 응답을 받아 console과 브라우저에 출력합니다.
+	try {
+        const cancelResponse = await axios({
+            url: 'https://webapi.nicepay.co.kr/webapi/cancel_process.jsp',
+            method: 'POST',
+            headers: {
+                'User-Agent': 'Super Agent/0.0.1',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=euc-kr',
+            },
+            data: {
+                TID: tid,
+                MID: merchantID,
+                Moid: moid,
+                CancelAmt: cancelAmt,
+                CancelMsg: cancelMsg, // 취소 메세지 한글 처리 시 인코딩 euc-kr로 요청.
+                PartialCancelCode: partialCancelCode,
+                EdiDate: ediDate,
+                SignData: signData,
+                CharSet: 'utf-8'    
+            }
+        });
+
+        res.json(cancelResponse.data);
+        console.log('취소 결과 :', cancelResponse.data);
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    };
+
+})
+
+function getSignData(str) {
+    const encrypted = CryptoJS.SHA256(str);
+    return encrypted;
+}
+
+app.listen(port, () => console.log('**\n\nPAYMENT TEST URL:: localhost:3000/payment\nCANCEL TEST URL:: localhost:3000/cancel \n\n**'))
+```
+
+### 5. python 구현
+
+```python
+from flask import Flask, render_template, request
+from datetime import datetime
+import hashlib, requests, sys, json
+from base64 import b64encode, b64decode
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+from Crypto.Random import get_random_bytes
+
+app = Flask(__name__)
+
+def getSignData(str):
+    encoded_str = str.encode()
+    EncryptData = hashlib.sha256(encoded_str).hexdigest()
+    return EncryptData
+
+def getEdiDate():
+    YYYYmmddHHMMSS = datetime.today().strftime("%Y%m%d%H%M%S")
+    return str(YYYYmmddHHMMSS)
+
+##Req variables
+Amt         = "1004"                          # 결제상품금액
+BuyerEmail  = "happy@day.co.kr"               # 구매자메일주소
+BuyerName   = "나이스"                        # 구매자명 
+BuyerTel    = "01000000000"                   # 구매자연락처 
+EdiDate     = getEdiDate()                    # 거래 날짜   
+GoodsName   = "상품"                          # 결제상품명
+MerchantKey = "EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3b2lurNYkVXrZ7Z1AoqQnXI3eLuaUFyoRNC6FkrzVjceg==" #상점키
+MID         = "nicepay00m"                    # 상점아이디
+Moid        = "mnoid1234567890"               # 상품주문번호  
+CancelPwd   = "123456"                        # 취소비밀번호       
+ReturnURL   = "http://localhost:5000/authReq" # Mobile only
+
+@app.route('/cancel')
+def reqCancel():
+    return render_template(
+        'cancelRequest.html',
+        title="hello world"
+    )
+
+#Cancel
+@app.route('/cancelReq', methods=['POST'])
+def cancelReq():   
+    TID=request.form['TID']
+    CancelAmt=request.form['CancelAmt']
+    PartialCancelCode=request.form['PartialCancelCode']
+    Moid="test"
+    CancelMsgKr="고객요청"
+    CancelMsg=CancelMsgKr.encode("euc-kr","ignore") 
+    EdiDate=getEdiDate()
+    SignData=getSignData(MID + CancelAmt + EdiDate + MerchantKey)
+
+    data = {
+        'TID': TID,
+        'MID': MID,
+        'Moid': Moid,
+        'CancelAmt': CancelAmt,
+        'CancelMsg': CancelMsg, #취소 메시지 한글 처리하는경우 인코딩 EUC-KR로 요청
+        'PartialCancelCode': PartialCancelCode,
+        'EdiDate': EdiDate,
+        'SignData': SignData
+    }
+    resDict = authRequest("https://webapi.nicepay.co.kr/webapi/cancel_process.jsp", data)
+    return render_template(
+        'result.html',
+        result=resDict
+    )         
+
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+---

@@ -1,0 +1,393 @@
+# Nicepay API 2.0 - 결제통보
+- https://developers.nicepay.co.kr/manual-noti.php
+
+결제가 완료되면, 승인 결과 데이터를 가맹점이 미리 설정한 **URL 또는 IP 주소**로 전송하는 서비스입니다.  
+가상계좌 결제의 경우, 입금 확인 시점에 통보가 이루어집니다.
+
+## 개요
+- 결제 완료 후, 가맹점 서버에서 응답을 받을 수 있도록 설정한 **Return URL 또는 Notify URL**에 HTTP POST 방식으로 승인 결과 전달
+- 가상계좌의 경우, 입금 완료 후 승인 처리 시점에 통보
+
+## 📌 Notification 주요 요소
+
+### ✅ 통보 데이터 주요 필드 (예시)
+- `resultCode` : 처리 결과 코드
+- `resultMsg` : 결과 메시지
+- `tid` : 거래 식별자
+- `orderId` : 가맹점 주문번호
+- `amount` : 결제금액
+- `payMethod` : 결제 수단 (카드, 계좌이체, 가상계좌 등)
+- 기타: `currency`, `buyerEmail`, `signature`, `authToken` 등
+
+### 🔐 보안 및 위변조 검증
+- `signature` 또는 `SignData` 등을 활용해 전송 데이터 위변조 여부 확인
+- 서버 사이드에서 필수 검증 수행 권장
+
+## 통보 흐름 요약
+
+1. 고객이 결제를 완료하면 PG사(나이스페이)가 결과를 Notify URL로 POST
+2. 가맹점 서버에서 수신 데이터를 검증
+3. 정상 처리된 경우, 자체 승인 단계(API 호출 등)를 진행
+4. 시스템 상태 업데이트 및 고객 응답 처리
+
+## 결제통보 파라미터
+
+### 공통
+| 파라미터          | 길이   | 설명   |
+|----------------|------|------|
+| Amt            | 12B  | 상품금액 (예시: 1000) |
+| AuthCode       | 30B  | 승인번호 |
+| AuthDate       | 12B  | 승인일시 (YYMMDDHHMISS) |
+| BuyerAuthNum   | 15B  | 구매자 식별번호 |
+| BuyerEmail     | 60B  | 구매자 e-mail (예시: it@nicepay.co.kr) |
+| FnCd           | 4B   | 제휴사코드 |
+| FnName         | 20B  | 제휴사명 |
+| GoodsName      | 40B  | 상품명 (예시: 곰인형) |
+| MallUserID     | 20B  | 고객 ID |
+| MID            | 10B  | 가맹점아이디 |
+| MOID           | 64B  | 주문번호 |
+| name           | 30B  | 구매자명 |
+| PayMethod      | 10B  | 지불수단 |
+| RcptAuthCode   | 30B  | 현금영수증 승인번호 |
+| RcptTID        | 30B  | 현금영수증 TID |
+| RcptType       | 1B   | 현금영수증 타입 (미발행: 0 / 소득공제: 1 / 지출증빙: 2) |
+| ReceitType     | 1B   | 현금영수증 타입, RcptType 파라미터와 동일한 값 응답 |
+| ResultCode     | 4B   | 결과코드 |
+| ResultMsg      | 100B | 결과메세지 |
+| StateCd        | 1B   | 거래 상태 (승인: 0, 전취소: 1, 후취소: 2) |
+| TID            | 30B  | 거래ID |
+| CancelDate     | 12B  | 취소일시 (YYMMDDHHMISS) |
+| CancelMOID     | 64B  | 취소요청 주문번호 (신용카드 취소 통보 시에만 응답값 존재, 이외 결제수단은 빈 값으로 응답) |
+| TransType      | 1B   | 에스크로 결제 여부, 결제수단이 신용카드, 계좌이체, 가상계좌인 경우에만 응답. (0: 일반 결제, 1: 에스크로 결제) |
+| MallReserved   | 500B | 가맹점 여분필드 |
+| MallReserved1  | 10B  | 사업자번호 |
+| MallReserved2  |      | 미사용 필드이며 빈 값으로 응답함 |
+| MallReserved3  |      | 미사용 필드이며 빈 값으로 응답함 |
+| MallReserved4  |      | 미사용 필드이며 빈 값으로 응답함 |
+| MallReserved5  |      | 미사용 필드이며 빈 값으로 응답함 |
+| MallReserved6  |      | 미사용 필드이며 빈 값으로 응답함 |
+| MallReserved7  |      | 미사용 필드이며 빈 값으로 응답함 |
+| MallReserved8  |      | 미사용 필드이며 빈 값으로 응답함 |
+| MallReserved9  |      | 미사용 필드이며 빈 값으로 응답함 |
+| MallReserved10 |      | 미사용 필드이며 빈 값으로 응답함 |
+
+### 카드
+| 파라미터        | 길이   | 설명 |
+|----------------|-------|------|
+| CardNo         | 16B   | 카드번호 (예시: 12345678****1234) | 
+| CardQuota      | 2B    | 할부개월 | 
+| SUB_ID         | 20B   | 서브 아이디 | 
+| AcquCd         | 3B    | 카드 매입사 코드 | 
+| AcquName       | 20B   | 카드 매입사명 | 
+| ClickpayCl     | 2B    | 간편결제구분 | 
+| TermNo         | 20B   | CATID (단말기를 사용하는 MID에 한하여 응답값 존재) | 
+| EdiNo          | 20B   | 전문관리항목 (단말기를 사용하는 MID 중 단말기(온/오프) 거래에 한하여 응답값 존재) | 
+| CardCl         | 2B    | 카드구분 (신용카드: 0, 체크카드: 1) | 
+| CardType       | 2B    | 카드형태 (개인: 01, 법인: 02, 해외: 03) |
+
+### 가상계좌
+| 파라미터        | 길이   | 설명   |
+|----------------|-------|-------|
+| VbankInputName | 20B   | 가상계좌 입금자명 |
+| VbankName      | 20B   | 가상계좌 은행명 |
+| VbankNum       | 20B   | 가상계좌 번호 |
+
+
+## 📂 구현 예제 (Pseudo-code)
+
+### 1. Java/JSP 구현
+
+```jsp
+<%@ page  contentType="text/html; charset=euc-kr" %>
+<%@ page import = "java.io.*" %>
+<%@ page import = "java.util.Calendar" %>
+<%
+
+//*********************************************************************************
+// 구매자가 입금하면 결제데이터 통보를 수신하여 DB 처리 하는 부분 입니다.
+// 수신되는 필드에 대한 DB 작업을 수행하십시오.
+// 수신필드 자세한 내용은 메뉴얼 참조
+//*********************************************************************************
+
+String PayMethod    = request.getParameter("PayMethod");        //지불수단
+String MID          = request.getParameter("MID");              //상점ID
+String MallUserID   = request.getParameter("MallUserID");       //회원사 ID
+String Amt          = request.getParameter("Amt");              //금액
+String name         = request.getParameter("name");             //구매자명
+String GoodsName    = request.getParameter("GoodsName");        //상품명
+String TID          = request.getParameter("TID");              //거래번호
+String MOID         = request.getParameter("MOID");             //주문번호
+String AuthDate     = request.getParameter("AuthDate");         //입금일시 (yyMMddHHmmss)
+String ResultCode   = request.getParameter("ResultCode");       //결과코드 ('4110' 경우 입금통보)
+String ResultMsg    = request.getParameter("ResultMsg");        //결과메시지
+String VbankNum     = request.getParameter("VbankNum");         //가상계좌번호
+String FnCd         = request.getParameter("FnCd");             //가상계좌 은행코드
+String VbankName    = request.getParameter("VbankName");        //가상계좌 은행명
+String VbankInputName = request.getParameter("VbankInputName"); //입금자 명
+String CancelDate   = request.getParameter("CancelDate");       //취소일시
+
+//*********************************************************************************
+//가상계좌채번시 현금영수증 자동발급신청이 되었을경우 전달되며 
+//RcptTID 에 값이 있는경우만 발급처리 됨
+//*********************************************************************************
+String RcptTID      = request.getParameter("RcptTID");          //현금영수증 거래번호
+String RcptType     = request.getParameter("RcptType");         //현금 영수증 구분(0:미발행, 1:소득공제용, 2:지출증빙용)
+String RcptAuthCode = request.getParameter("RcptAuthCode");     //현금영수증 승인번호
+
+
+//*********************************************************************************
+// 이부분에 로그파일 경로를 수정해주세요.
+// 로그는 문제발생시 오류 추적의 중요데이터 이므로 반드시 적용해주시기 바랍니다.
+//*********************************************************************************
+String file_path = "/usr/local/jboss/jboss-as/server/pay/log/nice_vacct_noti_result.log";
+
+File file = new File(file_path);
+file.createNewFile();
+FileWriter fw = new FileWriter(file_path, true);
+
+fw.write("************************************************\r\n");
+fw.write("PayMethod     : " + PayMethod + "\r\n");
+fw.write("MID           : " + MID + "\r\n");
+fw.write("MallUserID    : "+ MallUserID + "\r\n");
+fw.write("Amt           : " + Amt + "\r\n");
+fw.write("name          : " +  name + "\r\n");
+fw.write("GoodsName     : " + GoodsName + "\r\n");
+fw.write("TID           : "+ TID + "\r\n");
+fw.write("MOID          : "+ MOID + "\r\n");
+fw.write("AuthDate      : "+ AuthDate + "\r\n");
+fw.write("ResultCode    : "+ ResultCode + "\r\n");
+fw.write("ResultMsg     : "+ ResultMsg + "\r\n");
+fw.write("VbankNum      : "+ VbankNum + "\r\n");
+fw.write("FnCd          : "+ FnCd + "\r\n");
+fw.write("VbankName     : "+ VbankName + "\r\n");
+fw.write("VbankInputName : "+ VbankInputName + "\r\n");
+fw.write("RcptTID       : "+ RcptTID + "\r\n");
+fw.write("RcptType      : "+ RcptType + "\r\n");
+fw.write("RcptAuthCode  : "+ RcptAuthCode + "\r\n");
+fw.write("CancelDate    : "+ CancelDate + "\r\n");
+fw.write("************************************************\r\n");
+  
+fw.close();
+  
+//가맹점 DB처리 
+  
+//**************************************************************************************************
+//**************************************************************************************************
+//결제 데이터 통보 설정 > “OK” 체크박스에 체크한 경우" 만 처리 하시기 바랍니다.
+//**************************************************************************************************		
+//TCP인 경우 OK 문자열 뒤에 라인피드 추가
+//위에서 상점 데이터베이스에 등록 성공유무에 따라서 성공시에는 "OK"를 NICEPAY로
+//리턴하셔야합니다. 아래 조건에 데이터베이스 성공시 받는 FLAG 변수를 넣으세요
+//(주의) OK를 리턴하지 않으시면 NICEPAY 서버는 "OK"를 수신할때까지 계속 재전송을 시도합니다
+//기타 다른 형태의 PRINT(out.print)는 하지 않으시기 바랍니다
+//if (데이터베이스 등록 성공 유무 조건변수 = true) 
+//  {
+//      out.print("OK"); // 절대로 지우지 마세요
+//  } 
+//  else 
+//  {
+//      out.print("FAIL"); // 절대로 지우지 마세요
+//  }
+//*************************************************************************************************	
+//*************************************************************************************************
+ 
+%>
+```
+
+### 2. PHP 구현
+
+```php
+<?php
+
+//'**********************************************************************************
+//' 구매자가 입금하면 결제데이터 통보를 수신하여 DB 처리 하는 부분 입니다.
+//' 수신되는 필드에 대한 DB 작업을 수행하십시오.
+//' 수신필드 자세한 내용은 메뉴얼 참조
+//'**********************************************************************************
+
+@extract($_GET);
+@extract($_POST);
+@extract($_SERVER);
+
+$PayMethod      = $PayMethod;           //지불수단
+$M_ID           = $MID;                 //상점ID
+$MallUserID     = $MallUserID;          //회원사 ID
+$Amt            = $Amt;                 //금액
+$name           = $name;                //구매자명
+$GoodsName      = $GoodsName;           //상품명
+$TID            = $TID;                 //거래번호
+$MOID           = $MOID;                //주문번호
+$AuthDate       = $AuthDate;            //입금일시 (yyMMddHHmmss)
+$ResultCode     = $ResultCode;          //결과코드 ('4110' 경우 입금통보)
+$ResultMsg      = $ResultMsg;           //결과메시지
+$VbankNum       = $VbankNum;            //가상계좌번호
+$FnCd           = $FnCd;                //가상계좌 은행코드
+$VbankName      = $VbankName;           //가상계좌 은행명
+$VbankInputName = $VbankInputName;      //입금자 명
+$CancelDate     = $CancelDate;          //취소일시
+
+//가상계좌채번시 현금영수증 자동발급신청이 되었을경우 전달되며 
+//RcptTID 에 값이 있는경우만 발급처리 됨
+$RcptTID        = $RcptTID;             //현금영수증 거래번호
+$RcptType       = $RcptType;            //현금 영수증 구분(0:미발행, 1:소득공제용, 2:지출증빙용)
+$RcptAuthCode   = $RcptAuthCode;        //현금영수증 승인번호
+
+//**********************************************************************************
+//이부분에 로그파일 경로를 수정해주세요.
+$logfile = fopen("C:\\NICEPAY20\\log\\nice_vacct_noti_result.log", "a+" );
+//로그는 문제발생시 오류 추적의 중요데이터 이므로 반드시 적용해주시기 바랍니다.
+//**********************************************************************************
+ 
+fwrite( $logfile,"************************************************\r\n");
+fwrite( $logfile,"PayMethod     : ".$PayMethod."\r\n");
+fwrite( $logfile,"MID           : ".$MID."\r\n");
+fwrite( $logfile,"MallUserID    : ".$MallUserID."\r\n");
+fwrite( $logfile,"Amt           : ".$Amt."\r\n");
+fwrite( $logfile,"name          : ".$name."\r\n");
+fwrite( $logfile,"GoodsName     : ".$GoodsName."\r\n");
+fwrite( $logfile,"TID           : ".$TID."\r\n");
+fwrite( $logfile,"MOID          : ".$MOID."\r\n");
+fwrite( $logfile,"AuthDate      : ".$AuthDate."\r\n");
+fwrite( $logfile,"ResultCode    : ".$ResultCode."\r\n");
+fwrite( $logfile,"ResultMsg     : ".$ResultMsg."\r\n");
+fwrite( $logfile,"VbankNum      : ".$VbankNum."\r\n");
+fwrite( $logfile,"FnCd          : ".$FnCd."\r\n");
+fwrite( $logfile,"VbankName     : ".$VbankName."\r\n");
+fwrite( $logfile,"VbankInputName : ".$VbankInputName."\r\n");
+fwrite( $logfile,"RcptTID       : ".$RcptTID."\r\n");
+fwrite( $logfile,"RcptType      : ".$RcptType."\r\n");
+fwrite( $logfile,"RcptAuthCode  : ".$RcptAuthCode."\r\n");
+fwrite( $logfile,"CancelDate    : ".$CancelDate."\r\n");
+fwrite( $logfile,"************************************************\r\n");
+
+fclose( $logfile );
+
+//가맹점 DB처리
+  
+//**************************************************************************************************
+//**************************************************************************************************
+//결제 데이터 통보 설정 > “OK” 체크박스에 체크한 경우" 만 처리 하시기 바랍니다.
+//**************************************************************************************************
+//TCP인 경우 OK 문자열 뒤에 라인피드 추가
+//위에서 상점 데이터베이스에 등록 성공유무에 따라서 성공시에는 "OK"를 NICEPAY로
+//리턴하셔야합니다. 아래 조건에 데이터베이스 성공시 받는 FLAG 변수를 넣으세요
+//(주의) OK를 리턴하지 않으시면 NICEPAY 서버는 "OK"를 수신할때까지 계속 재전송을 시도합니다
+//기타 다른 형태의 PRINT(out.print)는 하지 않으시기 바랍니다
+//if (데이터베이스 등록 성공 유무 조건변수 = true)
+//{
+//            echo "OK";                        // 절대로 지우지마세요
+//}
+//else 
+//{
+//            echo "FAIL";                        // 절대로 지우지마세요
+//}
+//*************************************************************************************************	
+//*************************************************************************************************
+?>
+```
+
+### 3. C# (ASP.NET) 구현
+
+```csharp
+using System;
+using System.Web.UI;
+using System.IO;
+
+public partial class niceVacctNoti : System.Web.UI.Page
+{
+    protected string LogPath;
+
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        if (!Page.IsPostBack)
+        {
+            responseVacctNoti();
+        }
+    }
+
+    protected void responseVacctNoti()
+    {
+        String sPayMethod      = Request.Params["PayMethod"];          // 지불수단
+        String sMID            = Request.Params["MID"];                // 상점ID
+        String sMallUserID     = Request.Params["MallUserID"];         // 회원사 ID
+        String sAmt            = Request.Params["Amt"];                // 금액
+        String sName           = Request.Params["name"];               // 구매자명
+        String sGoodsName      = Request.Params["GoodsName"];          // 상품명
+        String sTID            = Request.Params["TID"];                // 거래번호
+        String sMOID           = Request.Params["MOID"];               // 주문번호
+        String sAuthDate       = Request.Params["AuthDate"];           // 입금일시 (yyMMddHHmmss)
+        String sResultCode     = Request.Params["ResultCode"];         // 결과코드 ('4110' 경우 입금통보)
+        String sResultMsg      = Request.Params["ResultMsg"];          // 결과메시지
+        String sVbankNum       = Request.Params["VbankNum"];           // 가상계좌번호
+        String sFnCd           = Request.Params["FnCd"];               // 가상계좌 은행코드
+        String sVbankName      = Request.Params["VbankName"];          // 가상계좌 은행명
+        String sVbankInputName = Request.Params["VbankInputName"];     // 입금자 명
+        String sCancelDate     = Request.Params["CancelDate"];         // 취소일시
+ 
+        // 가상계좌채번시 현금영수증 자동발급신청이 되었을경우 전달 (RcptTID, RcptType, RcptAuthCode)
+        String sRcptTID        = Request.Params["RcptTID"];            // 현금영수증 거래번호
+        String sRcptType       = Request.Params["RcptType"];           // 현금 영수증 구분(0:미발행, 1:소득공제용, 2:지출증빙용)
+        String sRcptAuthCode   = Request.Params["RcptAuthCode"];       // 현금영수증 승인번호
+
+        // 로그파일 
+        FileInfo file = new FileInfo(@"C:\log\nice_vacct_noti_result.log");
+        StreamWriter sw = file.AppendText();
+        sw.WriteLine("************************************************");
+        sw.WriteLine("PayMethod      : " + sPayMethod);
+        sw.WriteLine("M_ID           : " + sMID);
+        sw.WriteLine("MallUserID     : " + sMallUserID);
+        sw.WriteLine("Amt            : " + sAmt);
+        sw.WriteLine("name           : " + sName);
+        sw.WriteLine("GoodsName      : " + sGoodsName);
+        sw.WriteLine("TID            : " + sTID);
+        sw.WriteLine("MOID           : " + sMOID);
+        sw.WriteLine("AuthDate       : " + sAuthDate);
+        sw.WriteLine("ResultCode     : " + sResultCode);
+        sw.WriteLine("ResultMsg      : " + sResultMsg);
+        sw.WriteLine("VbankNum       : " + sVbankNum);
+        sw.WriteLine("FnCd           : " + sFnCd);
+        sw.WriteLine("VbankName      : " + sVbankName);
+        sw.WriteLine("VbankInputName : " + sVbankInputName);
+        sw.WriteLine("RcptTID        : " + sRcptTID);
+        sw.WriteLine("RcptType       : " + sRcptType);
+        sw.WriteLine("RcptAuthCode   : " + sRcptAuthCode);
+        sw.WriteLine("CancelDate     : " + sCancelDate);        
+        sw.WriteLine("************************************************");
+        sw.WriteLine("");
+        sw.Flush();
+        sw.Close();
+
+        /****************************************************
+         * <결제 결과 가맹점 데이터베이스 처리>
+         * 
+         * 가상계좌 입금결과를 가맹점 입금완료 처리를 위해
+         * 데이터베이스 처리를 하시기 바랍니다.
+         * 
+        ****************************************************/
+
+        bool insertSuccess = true; // 가맹점 데이터베이스 처리가 완료된 것으로 가정합니다.
+
+        // 가맹점 DB처리 - 결제 데이터 통보 설정 > “OK” 체크박스에 체크한 경우" 만 처리 하시기 바랍니다.
+        // TCP인 경우 OK 문자열 뒤에 라인피드 추가
+        if (insertSuccess == true) {
+            Response.Write("OK");
+            Response.End();
+        } else {
+            Response.Write("FAIL");
+            Response.End();
+        }
+    }
+}
+```
+
+## 📌 주의사항 요약
+
+- **Notify URL(IP)** 설정: 사전에 인증된 URL/IP만 접근 허용
+- 데이터 위변조 방지 검증 필수
+- 중복 Notify에 대비한 **idempotency 처리** 필요
+- 결제 취소, 인증 시간 초과 등 예외 케이스도 필수 대응
+
+## 🔗 결제통보 연관 문서
+- [인증 결제 API 가이드](https://developers.nicepay.co.kr/manual-auth.php)
+- [결제 조회 API](https://developers.nicepay.co.kr/manual-status.php)
+- [결제 취소 API](https://developers.nicepay.co.kr/manual-cancel.php)

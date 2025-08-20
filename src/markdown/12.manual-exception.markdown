@@ -1,0 +1,74 @@
+# Nicepay API 2.0 - 예외/보안 처리
+- https://developers.nicepay.co.kr/manual-exception.php
+
+## ✅ Signature 위변조 검증
+- 위변조 검증은 **서버 사이드에서 반드시 수행**해야 합니다.
+- **인증 완료 시**: Signature 필드 값을 통해 응답 위변조 체크
+- 결제 인증 완료 시, NICEPAY는 가맹점으로 `Signature` 값을 전달합니다.
+- 가맹점은 인증응답 데이터를 조합해 **직접 생성한 Signature**와 비교하여 위변조 여부를 확인해야 합니다.
+- **승인 완료 시**: Signature 필드 값을 통해 응답 위변조 체크
+- 결제 승인 완료 시, NICEPAY는 가맹점으로 `Signature` 값을 전달합니다.
+- 가맹점은 승인응답 데이터를 조합해 **직접 생성한 Signature**와 비교하여 위변조 여부를 확인해야 합니다.
+
+
+## ✅ 망취소 프로세스
+거래대사 불일치 방지를 위해 인증응답 값을 참고하여 망취소 요청을 진행
+### API 호출 실패 시
+- 인증 완료 후 승인 요청 시 Connection time-out 발생
+### API 응답 실패 시
+- Read time-out 발생
+
+
+## ✅ 망취소 요청 파라미터
+
+- **URL**: API 인증 응답 시 NetCancelURL 파라미터로 응답된 URL
+- **Method**: POST
+- **Content-Type**: application/x-www-form-urlencoded
+- **Encoding**: euc-kr
+
+| 파라미터명     | 크기     | 필수 | 설명 |
+|--------------|---------|--------|------|
+| TID          | 30B     | Y | 거래 ID |
+| AuthToken    | 40B     | Y | 인증 TOKEN |
+| MID          | 10B     | Y | 가맹점 ID |
+| Amt          | 12B     | | 금액 |
+| EdiDate      | 14B     | Y | 전문생성일시 (YYYYMMDDHHMMSS) |
+| NetCancel    | 1B      | Y | 망취소 여부 (1 고정) |
+| SignData     | 256B    | Y | hex(sha256(AuthToken + MID + Amt + EdiDate + MerchantKey)) |
+| CharSet      | 10B     | | 인증 응답 인코딩 (euc-kr(default) / utf-8) |
+| EdiType      | 10B     | | 응답전문 유형 (JSON / KV) *KV:Key=value |
+| MallReserved | 500B    | | 가맹점 여분 필드 |
+
+
+## ✅ 망취소 응답 파라미터
+
+> **참고**: PG사의 기능 추가에 따라 응답 필드가 추가될 수 있으므로, 가맹점에서 이를 고려한 설계 필요
+
+| 항목          | 길이 | 필수 | 설명 |
+|--------------|------|------|------|
+| ResultCode   | 4B   | Y | 취소 결과 코드 |
+| ResultMsg    | 100B | Y | 취소 결과 메시지 |
+| CancelAmt    | 12B  | Y | 취소 금액 (예, 1000원인 경우 -> 000000001000) |
+| MID          | 10B  | Y | 가맹점 ID |
+| Moid         | 64B  | Y | 가맹점 주문번호 |
+| Signature    | 500B |  | `hex(sha256(TID + MID + CancelAmt + MerchantKey))`, 위변조 검증 데이터 |
+| PayMethod    | 10B  |  | CARD: 신용카드, BANK: 계좌이체, VBANK: 가상계좌, CELLPHONE : 휴대폰결제 |
+| TID          | 30B  |  | 거래 ID |
+| CancelDate   | 8B   |  | 취소일자 (YYYYMMDD) |
+| CancelTime   | 6B   |  | 취소시간 (HHmmss) |
+| CancelNum    | 8B   |  | 취소번호 |
+| RemainAmt    | 12B  |  | 취소 후 잔액 (예, 잔액이 1000원인 경우 -> 000000001000) |
+| MallReserved | 500B |  | 가맹점 여분 필드 |
+
+
+## ✅ 모바일 결제 인증 요청/응답 실패 처리 가이드
+
+- **결제창 노출 실패**: goPay() 함수 호출 후 결제창 노출에 실패한 경우 (인증 요청 실패)
+- **인증 응답 실패**: 결제창은 노출되었으나 인증 응답이 없는 경우
+
+
+## ✅ PC 결제 인증 요청/응답 실패 처리 가이드
+
+- **결제창 호출 실패**: goPay() 함수 호출에 실패한 경우
+- **인증 응답 실패**: 결제창은 노출되었으나 인증 응답이 없는 경우
+- **결제창 종료**: 사용자가 결제창 종료 버튼을 클릭한 경우 (결제창 종료 이벤트 처리)

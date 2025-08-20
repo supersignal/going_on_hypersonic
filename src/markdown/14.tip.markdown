@@ -1,0 +1,154 @@
+# Nicepay API 2.0 - FAQ
+- https://developers.nicepay.co.kr/tip.php
+
+## 1617: 거래금액 오류 (공급가액, 부가세, 봉사료, 면세금액 미입력)
+
+```html
+<!-- EX) 상품가격이 1,004 원인 경우 -->
+<!-- Amt = SupplyAmt + GoodsVat + ServiceAmt + TaxFreeAmt -->
+
+<!-- 필드명:Amt / 사이즈:12 / 설명:결제 총액 -->
+<input type="hidden" name="Amt" value="1004">
+
+<!-- 필드명:SupplyAmt / 사이즈:12 / 설명:공급가액 -->
+<input type="hidden" name="SupplyAmt" value="900">
+
+<!-- 필드명:GoodsVat / 사이즈:12 / 설명:부가가치세 -->
+<input type="hidden" name="GoodsVat" value="104">
+
+<!-- 필드명:ServiceAmt / 사이즈:12 / 설명:봉사료 -->
+<input type="hidden" name="ServiceAmt" value="0">
+
+<!-- 필드명:TaxFreeAmt / 사이즈:12 / 설명:면세 금액 -->
+<input type="hidden" name="TaxFreeAmt" value="0">
+```
+
+- **참고**: 면세 설정을 이용하려면 연동 전 서비스 신청이 필요합니다.
+- **취소 시**: 각 필드 값에 맞도록 요청하세요.
+
+## 1652: 승인 TID 길이 오류
+
+```
+TID = MID(10byte) + 지불수단(2byte) + 매체구분(2byte) + 시간정보(yyMMddHHmmss) + 랜덤(4byte)
+```
+
+**설명 및 예시**:
+- **MID**: 가맹점 아이디, 끝에 소문자 `m`이 포함됨 (예: `nicepay00m`).
+- **지불수단**: 결제 수단별 코드
+  - `01`: CARD (신용카드)
+  - `02`: BANK (계좌이체)
+  - `03`: VBANK (가상계좌)
+  - `05`: CELLPHONE (휴대폰 결제)
+- **매체구분**: 거래 형태
+  - `01`: 일반 결제
+  - `10`: 부분 취소
+  - `16`: 빌링 결제
+- **시간정보**: 결제 요청 일시 (YYMMDDHHMISS, 예: `250521132224`)
+- **랜덤**: 거래 식별을 위한 임의의 4자리 값 (예: `0123`)
+
+**TID 생성 예시**:
+- 상황: `nicepay00m` 아이디로 2025년 5월 21일 13시 22분 24초에 가상계좌 발급 API 요청
+- TID: `nicepay00m03012505211322240123`
+
+## 2047: 이미 입금처리가 완료되어 취소 불가
+
+| 파라미터명      | 파라미터 설명                                      |
+|----------------|------------------------------------------------|
+| RefundAcctNo   | 16 byte, 가상계좌/휴대폰 익월 환불 전용 환불계좌번호 (숫자만) |
+| RefundBankCd   | 3 byte, 가상계좌/휴대폰 익월 환불 전용 환불계좌코드 (*은행코드 참조) |
+| RefundAcctNm   | 10 byte, 가상계좌/휴대폰 익월 환불 전용 환불계좌주명 (EUC-KR) |
+
+## A002: 비정상적인 접근으로 처리가 불가능합니다
+
+```html
+<!-- 필드명:ReturnURL / 사이즈:500 / 설명:인증 완료 결과 처리 URL -->
+<input type="hidden" name="ReturnURL" value="https://가맹점 URL">
+```
+
+## W003: 상점 MID가 유효하지 않습니다
+
+```html
+<!-- 필드명:MID / 사이즈:10 / 설명:가맹점 MID -->
+<input type="hidden" name="MID" value="nicepay00m"> <!-- test MID: nicepay00m -->
+```
+
+## W004: 결제수단이 유효하지 않습니다
+
+```html
+<!-- 결제 수단 -->
+<!-- CARD: 신용카드 -->
+<!-- BANK: 계좌이체 -->
+<!-- VBANK: 가상계좌 -->
+<!-- CELLPHONE: 휴대폰 결제 -->
+
+<!-- 필드명:PayMethod / 사이즈:10 / 설명:결제 수단 -->
+<input type="hidden" name="PayMethod" value="CARD"> <!-- 예: CARD: 신용카드 -->
+```
+
+## W007: 위변조 데이터를 체크하세요
+
+**Java 예시**:
+```java
+DataEncrypt sha256Enc = new DataEncrypt();
+String ediDate = getyyyyMMddHHmmss();
+String encryptData = sha256Enc.encrypt(ediDate + merchantID + price + merchantKey);
+
+<input type="hidden" name="SignData" value="<%=encryptData%>"/>
+```
+
+**PHP 예시**:
+```php
+$ediDate = date("YmdHis");
+$encryptData = bin2hex(hash('sha256', $ediDate.$MID.$price.$merchantKey, true));
+
+<input type="hidden" name="SignData" value="<?php echo($encryptData)?>"/>
+```
+
+**C# 예시**:
+```csharp
+encryptData = stringToSHA256(ediDate + merchantID + price + merchantKey);
+public String stringToSHA256(String plain) {
+    SHA256Managed SHA256 = new SHA256Managed();
+    String getHashString = BitConverter.ToString(SHA256.ComputeHash(Encoding.UTF8.GetBytes(plain))).ToLower();
+    return getHashString.Replace("-", "");
+}
+
+<input type="hidden" name="SignData" value="<%=encryptData%>"/>
+```
+
+**JavaScript 예시**:
+```javascript
+const format = require('date-format')
+const CryptoJS = require("crypto-js")
+
+var ediDate = format.asString('yyyyMMddhhmmss', new Date())
+var signData = getEncryptData(ediDate + merchantID + amt + merchantKey)
+
+function getEncryptData(str) {
+    var encrypted = CryptoJS.SHA256(str);
+    return encrypted;
+}
+```
+
+**Python 예시**:
+```python
+from datetime import datetime
+import hashlib
+
+def getEdiDate():
+    YYYYmmddHHMMSS = datetime.today().strftime("%Y%m%d%H%M%S")
+    return str(YYYYmmddHHMMSS)
+
+def getEncrypt(str):
+    encoded_str = str.encode()
+    EncryptData = hashlib.sha256(encoded_str).hexdigest()
+    return EncryptData
+
+EdiDate = getEdiDate()
+plainText = EdiDate + MID + Amt + MerchantKey
+SignData = getEncrypt(plainText)
+```
+
+- **참고**: 
+  - Hash 함수 처리는 위변조 방지를 위한 중요한 작업이므로 신중히 처리하세요.
+  - Hash 처리에 대한 책임은 가맹점에 있습니다.
