@@ -1,3 +1,4 @@
+# Nicepay API 2.0 - 승인 취소 API
 ## 승인 취소 프로세스
 **HTTP 요청 정보**
 - **URL**: `https://pg-api.nicepay.co.kr/webapi/cancel_process.jsp`
