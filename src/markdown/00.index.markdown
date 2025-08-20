@@ -74,43 +74,43 @@ nslookup pg-api.nicepay.co.kr
 - **기술문의**: it@nicepay.co.kr
 
 ## 인증 결제 API
-[인증 결제 API 문서](manual-auth.php)
+[인증 결제 API 문서](https://developers.nicepay.co.kr/manual-auth.php)
 
 ## 카드 키인 API
-[카드 키인 API 문서](manual-card-keyin.php)
+[카드 키인 API 문서](https://developers.nicepay.co.kr/manual-card-keyin.php)
 
 ## 카드 빌링 API
-[카드 빌링 API 문서](manual-card-billing.php)
+[카드 빌링 API 문서](https://developers.nicepay.co.kr/manual-card-billing.php)
 
 ## 가상계좌 발급 API
-[가상계좌 발급 API 문서](manual-virtual-account.php)
+[가상계좌 발급 API 문서](https://developers.nicepay.co.kr/manual-virtual-account.php)
 
 ## APP (iOS/Android)
-[APP 문서](manual-app.php)
+[APP 문서](https://developers.nicepay.co.kr/manual-app.php)
 
 ## 결제 조회 API
-[결제 조회 API 문서](manual-status.php)
+[결제 조회 API 문서](https://developers.nicepay.co.kr/manual-status.php)
 
 ## 결제통보
-[결제통보 문서](manual-noti.php)
+[결제통보 문서](https://developers.nicepay.co.kr/manual-noti.php)
 
 ## 영수증
-[영수증 문서](receipt.php)
+[영수증 문서](https://developers.nicepay.co.kr/receipt.php)
 
 ## 카드사/은행 코드
-[카드사/은행 코드 문서](manual-code-partner.php)
+[카드사/은행 코드 문서](https://developers.nicepay.co.kr/manual-code-partner.php)
 
 ## 결과코드
-[결과코드 문서](manual-code.php)
+[결과코드 문서](https://developers.nicepay.co.kr/manual-code.php)
 
 ## 예외/보안 처리
-[예외/보안 처리 문서](manual-exception.php)
+[예외/보안 처리 문서](https://developers.nicepay.co.kr/manual-exception.php)
 
 ## G2 인증서 변경 가이드
-[G2 인증서 변경 가이드 문서](manual-digicert-apply.php)
+[G2 인증서 변경 가이드 문서](https://developers.nicepay.co.kr/manual-digicert-apply.php)
 
 ## FAQ
-[FAQ 문서](tip.php)
+[FAQ 문서](https://developers.nicepay.co.kr/tip.php)
 
 ---
 
