@@ -653,27 +653,29 @@ server.tool("get_documents_v2", description, schema, handler);
 
 📚 가상계좌 발급 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/04.manual-virtual-account.markdown
 
-📚 APP(iOS/Android) https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/05.manual-app.markdown
+📚 취소 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/05.manual-cancel.markdown
 
-📚 결제조회 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/06.manual-status.markdown
+📚 APP(iOS/Android) https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/06.manual-app.markdown
 
-📚 결제통보 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/07.manual-noti.markdown
+📚 결제조회 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/07.manual-status.markdown
 
-📚 영수증 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/08.receipt.markdown
+📚 결제통보 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/08.manual-noti.markdown
 
-📚 카드사/은행 코드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/09.manual-code-partner.markdown
+📚 영수증 API https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/09.manual-receipt.markdown
 
-📚 결과코드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/10.manual-code.markdown
+📚 카드사/은행 코드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/10.manual-code-partner.markdown
 
-📚 예외/보안 처리 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/11.manual-exception.markdown
+📚 결과코드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/11.manual-code.markdown
 
-📚 G2 인증서 변경 가이드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/12.manual-digicert-apply.markdown
+📚 예외/보안 처리 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/12.manual-exception.markdown
 
-📚 FAQ https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/13.tip.markdown
+📚 G2 인증서 변경 가이드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/13.manual-digicert-apply.markdown
 
-📚 취소 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/14.cancel.markdown
+📚 FAQ https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/14.tip.markdown
+
+
 
 ---
 
 *📝 작성일: 2025년8월5일*  
-*🔄 최종 업데이트: 2025년8월6일* 
+*🔄 최종 업데이트: 2025년8월20일* 
