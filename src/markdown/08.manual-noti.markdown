@@ -1,4 +1,4 @@
-# Nicepay API 2.0 - 결제통보
+# Nicepay API 2.0 - 결제통보 API
 - https://developers.nicepay.co.kr/manual-noti.php
 
 결제가 완료되면, 승인 결과 데이터를 가맹점이 미리 설정한 **URL 또는 IP 주소**로 전송하는 서비스입니다.  
