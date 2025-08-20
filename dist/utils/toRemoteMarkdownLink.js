@@ -4,11 +4,11 @@ export function toRemoteMarkdownLink(link) {
         return;
     }
     // 이미 절대 경로인 경우 그대로 반환
-    if (link.startsWith("https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/")) {
+    if (link.startsWith("https://github.com/supersignal/going_on_hypersonic/blob/main/src/markdown/")) {
         return link.endsWith(".markdown") ? link : `${link}.markdown`;
     }
     // 상대 경로인 경우 절대 경로로 변환
-    const basePath = "https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/";
+    const basePath = "https://github.com/supersignal/going_on_hypersonic/blob/main/src/markdown/";
     const fullPath = `${basePath}${link.startsWith("/") ? link : `/${link}`}`;
     return fullPath.endsWith(".markdown") ? fullPath : `${fullPath}.markdown`;
 }
