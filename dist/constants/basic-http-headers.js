@@ -1,3 +1,3 @@
 export const BasicHttpHeaders = {
-    "user-agent": "NicePaymentsIntegrationGuide MCP",
+    "user-agent": "NicePayments developers MCP",
 };

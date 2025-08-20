@@ -2,15 +2,27 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { isNativeError } from "node:util/types";
 import { z } from "zod";
-import { 
-// getV1DocumentsByKeyword,
-// getV2DocumentsByKeyword,
-getDocumentsByKeyword, repository, } from "./tool/service.js";
+import dotenv from 'dotenv';
+import { validateEnv } from './config/validation.js';
+//환경변수 로드 및 검증
+dotenv.config();
+const env = validateEnv();
+console.log('환경변수 검증 완료:', env);
 const server = new McpServer({
     name: "nicepayments-integration-guide",
     description: "MCP-compatible toolset for integrating with nicepayments systems. Includes tools for retrieving LLM-structured text and fetching actual documentation through URLs. (나이스페이먼츠 시스템과의 연동을 위한 MCP 도구 모음입니다. LLM이 활용할 수 있는 텍스트 및 관련 문서를 가져오는 기능을 포함합니다.)",
     version: "1.0.0",
 });
+import { 
+// getV1DocumentsByKeyword,
+// getV2DocumentsByKeyword,
+getDocumentsByKeyword, repository, } from "./tool/service.js";
+// const server = new McpServer({
+//   name: "nicepayments-integration-guide",
+//   description:
+//     "MCP-compatible toolset for integrating with nicepayments systems. Includes tools for retrieving LLM-structured text and fetching actual documentation through URLs. (나이스페이먼츠 시스템과의 연동을 위한 MCP 도구 모음입니다. LLM이 활용할 수 있는 텍스트 및 관련 문서를 가져오는 기능을 포함합니다.)",
+//   version: "1.0.0",
+// });
 // 문서 검색 스키마
 const GetDocumentSchema = {
     keywords: z.array(z.string()).describe("UTF-8 인코딩된 문자열 배열"),

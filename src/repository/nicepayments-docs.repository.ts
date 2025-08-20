@@ -8,19 +8,34 @@ import {
 import { NicePaymentsDocumentLoader } from "../document/nicepayments-document.loader.js";
 import { MarkdownDocumentFetcher } from "../document/markdown-document.fetcher.js";
 import { DocumentChunk } from "../document/document-chunk.js";
+import path from "node:path";
 
 export class NicePaymentDocsRepository {
-  static async load(link = "https://github.com/supersignal/going_on_hypersonic/blob/main/llm/llms.txt") {
-    // 로컬 파일 읽기
-    const fs = await import('fs/promises');
-    
+//  static async load(link = "https://github.com/supersignal/going_on_hypersonic/blob/main/llm/llms.txt") {
+  static async load(
+    link = process.env.NICEPAY_DATA_PATH ||
+      "https://raw.githubusercontent.com/supersignal/going_on_hypersonic/main/src/llm/llms.txt"
+  ) {
     let llmText: string;
     try {
-      llmText = await fs.readFile(link.replace('file://', ''), 'utf-8');
-      console.log("[DEBUG] llms.txt 파일 정상 로드됨:", llmText.length, "bytes");
+      if (/^https?:\/\//i.test(link)) {
+        const response = await fetch(link);
+        if (!response.ok) {
+          throw new Error(`원격 파일 요청 실패: HTTP ${response.status}`);
+        }
+        llmText = await response.text();
+        console.log("[DEBUG] 원격 llms.txt 정상 로드:", llmText.length, "bytes");
+      } else {
+        // 로컬 파일 읽기
+        const fs = await import('fs/promises');
+        const filePath = path.resolve(link.replace(/^file:\/\//, ''));
+        llmText = await fs.readFile(filePath, 'utf-8');
+        console.log("[DEBUG] 로컬 llms.txt 정상 로드:", llmText.length, "bytes");
+      }
     } catch (error) {
-      console.error("[DEBUG] llms.txt 파일 로드 실패:", error);
-      throw new Error(`Failed to read LLM text file: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("[ERROR] llms.txt 파일 로드 실패:", errorMessage);
+      throw new Error(`문서 파일을 읽을 수 없습니다: ${errorMessage}`);
     }
 
     const rawDocs = parseLLMText(llmText);
@@ -48,14 +63,16 @@ export class NicePaymentDocsRepository {
     topN: number = 10
   ): Promise<string> {
     // [디버그] 검색 키워드 입력값 출력
-    console.log('[DEBUG][repository] findDocumentsByKeyword - 입력 키워드:', keywords);
+//    console.log('[DEBUG][repository] findDocumentsByKeyword - 입력 키워드:', keywords);
+    this.log('debug', 'findDocumentsByKeyword - 입력 키워드:', keywords);
     const result = await this.getDocumentsByKeywordForLLM(
       this.documents,
       keywords,
       topN
     );
     // [디버그] getDocumentsByKeywordForLLM 반환값 출력
-    console.log('[DEBUG][repository] findDocumentsByKeyword - getDocumentsByKeywordForLLM 반환값:', result);
+//    console.log('[DEBUG][repository] findDocumentsByKeyword - getDocumentsByKeywordForLLM 반환값:', result);
+    this.log('debug', 'findDocumentsByKeyword - getDocumentsByKeywordForLLM 반환값:', result);
     if (!result || result.trim() === "") {
       console.log("[DEBUG] BM25 검색 결과 없음");
     } else {
@@ -74,14 +91,16 @@ export class NicePaymentDocsRepository {
     topN: number = 10
   ): Promise<string> {
     // [디버그] BM25 점수 계산 전 입력값 출력
-    console.log('[DEBUG][repository] getDocumentsByKeywordForLLM - 입력 keywords:', keywords);
+//    console.log('[DEBUG][repository] getDocumentsByKeywordForLLM - 입력 keywords:', keywords);
+    this.log('debug', 'getDocumentsByKeywordForLLM - 입력 keywords:', keywords);
     const results = calculateBM25ScoresByKeywords(
       keywords.join("|"),
       documents
     );
     // [디버그] BM25 점수 결과 상위 3개 출력
-    console.log('[DEBUG][repository] getDocumentsByKeywordForLLM - BM25 결과:', results.length, results.slice(0, 3));
-
+//    console.log('[DEBUG][repository] getDocumentsByKeywordForLLM - BM25 결과:', results.length, results.slice(0, 3));
+//    this.log('debug', 'getDocumentsByKeywordForLLM - BM25 결과:', results.length, results.slice(0, 3)); 
+    this.log('debug', 'getDocumentsByKeywordForLLM - BM25 결과:', { length: results.length, top3: results.slice(0, 3) });
     const docs = results
       .slice(0, topN)
       .map((item) => this.findChunkByBM25Result(item))
@@ -104,9 +123,17 @@ export class NicePaymentDocsRepository {
 
   private normalizeChunks(chunks: DocumentChunk[]): string {
     // [디버그] normalizeChunks 입력값 출력
-    console.log('[DEBUG][repository] normalizeChunks - 입력 청크:', chunks);
+//    console.log('[DEBUG][repository] normalizeChunks - 입력 청크:', chunks);
+    this.log('debug', 'normalizeChunks - 입력 청크:', chunks);
     return `## 원본문서 제목 : ${chunks[0].originTitle}\n* 원본문서 ID : ${
       chunks[0].id
     }\n\n${chunks.map((chunk) => chunk.text).join("\n\n")}`;
   }
+
+  private log(level: 'debug' | 'info' | 'error', message: string, data?: any) {
+    if (process.env.LOG_LEVEL === 'debug' || level === 'error') {
+      console.log(`[${level.toUpperCase()}][repository] ${message}`, data || '');
+    }
+  }
+  
 } 
