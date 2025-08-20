@@ -62,9 +62,9 @@ nslookup pg-api.nicepay.co.kr
 
 | 내용                     | 링크                                                                 |
 |--------------------------|----------------------------------------------------------------------|
-| 인증결제 API 샘플코드    | [JSP](./releases/auth/NICEPAY-API-JSP-3.2.0.zip) <br> [PHP](./releases/auth/NICEPAY-API-PHP-3.2.0.zip) <br> [.NET](./releases/auth/NICEPAY-API-NET-3.2.0.zip) <br> [NODE.JS](./releases/auth/NICEPAY-API-NODEJS-3.2.1.zip) <br> [PYTHON](./releases/auth/NICEPAY-API-PYTHON-3.2.0.zip) |
-| App web-view 샘플코드    | [iOS(obj-c, swift)](./releases/app/NICEPAY-IOS.zip) <br> [Android(java, kotlin)](./releases/app/NICEPAY-ANDROID.zip) |
-| 결제통보 샘플코드        | [JSP](./releases/noti/NICEPAY-NOTI-SAMPLE-JSP.zip) <br> [PHP](./releases/noti/NICEPAY-NOTI-SAMPLE-PHP.zip) <br> [.NET](./releases/noti/NICEPAY-NOTI-SAMPLE-NET.zip) |
+| 인증결제 API 샘플코드     | [JSP](https://developers.nicepay.co.kr/releases/auth/NICEPAY-API-JSP-3.2.0.zip) <br> [PHP](https://developers.nicepay.co.kr/releases/auth/NICEPAY-API-PHP-3.2.0.zip) <br> [.NET](https://developers.nicepay.co.kr/releases/auth/NICEPAY-API-NET-3.2.0.zip) <br> [NODE.JS](https://developers.nicepay.co.kr/releases/auth/NICEPAY-API-NODEJS-3.2.1.zip) <br> [PYTHON](https://developers.nicepay.co.kr/releases/auth/NICEPAY-API-PYTHON-3.2.0.zip) |
+| App web-view 샘플코드    | [iOS(obj-c, swift)](https://developers.nicepay.co.kr/releases/app/NICEPAY-IOS.zip) <br> [Android(java, kotlin)](https://developers.nicepay.co.kr/releases/app/NICEPAY-ANDROID.zip) |
+| 결제통보 샘플코드         | [JSP](https://developers.nicepay.co.kr/releases/noti/NICEPAY-NOTI-SAMPLE-JSP.zip) <br> [PHP](https://developers.nicepay.co.kr/releases/noti/NICEPAY-NOTI-SAMPLE-PHP.zip) <br> [.NET](https://developers.nicepay.co.kr/releases/noti/NICEPAY-NOTI-SAMPLE-NET.zip) |
 
 ## 주의 사항
 - **Test 계정을 통한 결제는 23:30에 일괄 취소됩니다.**
