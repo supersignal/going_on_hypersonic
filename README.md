@@ -77,7 +77,7 @@ graph TD
 src/
 ├── config/                            # 환경 정의
 │   ├── env.d.ts                        # 기본 정의
-│   ├── index.ts                        # 차례
+│   ├── index.ts                        # 기본값 세팅
 │   └── validation.ts                   # 유효성 검증
 ├── constants/                         # 상수 정의
 │   ├── base-prompt.ts                  # 기본 프롬프트
@@ -91,8 +91,6 @@ src/
 │   ├── nicepayments-document.loader.ts # 문서 로더
 │   ├── parseLLMText.ts                 # LLM 텍스트 파서
 │   └── splitByLogicalSections.ts       # 마크다운 분할기
-├── repository/                        # 데이터 접근 계층
-│   └── nicepayments-docs.repository.ts # 문서 저장소
 ├── llm/                               # LLM
 |   └── llms.txt                        # 연동을 위한 개발자 문서
 ├── markdown/                          # Markdown
@@ -106,8 +104,6 @@ src/
 │   └── tool.ts                         # 키워드 검증
 ├── tests/                             # 테스트
 │   └── server.test.ts                  # 테스트 서버
-├── tests/                             # 테스트
-│   └── env.d.ts                        # 환경 설정
 ├── utils/                             # 유틸리티
 │   ├── calculateBM25.ts                # BM25 검색 알고리즘
 │   ├── logger.ts                       # 로거 도구
@@ -267,7 +263,7 @@ keyword: 키워드1, 키워드2, 키워드3
 1. llms.txt 파일 읽기
 2. parseLLMText()로 링크 추출
 3. NicePaymentsDocumentLoader 생성
-4. 각 링크에서 마크다운 문서 페치
+4. 각 링크에서 마크다운 문서 패치
 5. splitByLogicalSections()로 청킹
 6. 키워드 세트 생성 및 카테고리 분류
 7. NicePaymentsDocument 객체 생성
@@ -640,7 +636,7 @@ server.tool("get_documents_v2", description, schema, handler);
 
 ## 📚 결론
 
-이 나이스페이먼츠 MCP 서버는 잘 구조화된 문서 검색 시스템으로, MCP 프로토콜을 통해 AI 도구와 효과적으로 연동됩니다. 
+이 나이스페이먼츠 developers MCP 서버는 잘 구조화된 문서 검색 시스템으로, MCP 프로토콜을 통해 AI 도구와 효과적으로 연동됩니다. 
 
 ### 주요 강점
 - **모듈러 아키텍처**: 각 계층이 명확히 분리되어 유지보수성 우수
@@ -652,7 +648,7 @@ server.tool("get_documents_v2", description, schema, handler);
 - 설정 관리 외부화 필요
 - 테스트 커버리지 확대 필요  
 - 성능 모니터링 체계 부재
-- 하드코딩된 경로 및 설정값들
+- 하드코딩된 경로 및 설정값들 최소화
 
 전반적으로 프로덕션 환경에서 사용 가능한 수준의 코드 품질을 보여주며, 제안된 개선사항들을 단계적으로 적용하면 더욱 견고하고 확장 가능한 시스템으로 발전시킬 수 있습니다.
 
@@ -686,7 +682,6 @@ server.tool("get_documents_v2", description, schema, handler);
 📚 G2 인증서 변경 가이드 https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/13.manual-digicert-apply.markdown
 
 📚 FAQ https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/14.tip.markdown
-
 
 
 ---
