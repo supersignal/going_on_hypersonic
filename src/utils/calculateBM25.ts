@@ -8,8 +8,10 @@ export function calculateBM25ScoresByKeywords(
 //  b: number = 0.75
 //  k1: number = parseFloat(process.env.BM25_K1) || 1.2,
 //  b: number = parseFloat(process.env.BM25_B) || 0.75  
-  k1: number = parseFloat(process.env.BM25_K1 ?? '1.2'),
-  b: number = parseFloat(process.env.BM25_B ?? '0.75')  
+//  k1: number = parseFloat(process.env.BM25_K1 ?? '1.2'),
+//  b: number = parseFloat(process.env.BM25_B ?? '0.75')  
+  k1: number = parseFloat(process.env.BM25_K1 || '1.2'),
+  b: number = parseFloat(process.env.BM25_B || '0.75')  
 
 ): BM25Result[] {
   const allChunks = documents.flatMap((doc) => doc.getChunks());

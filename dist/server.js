@@ -16,7 +16,7 @@ const server = new McpServer({
 import { 
 // getV1DocumentsByKeyword,
 // getV2DocumentsByKeyword,
-getDocumentsByKeyword, repository, } from "./tool/service.js";
+getDocumentsByKeyword, repository, } from "./schemas/service.js";
 // const server = new McpServer({
 //   name: "nicepayments-integration-guide",
 //   description:
