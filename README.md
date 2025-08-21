@@ -49,7 +49,8 @@ graph TD
     E --> F[BM25 Search Engine]
     E --> G[Markdown Parser]
     G --> H[Local Files: llms.txt]
-    
+
+
     subgraph "Document Processing Pipeline"
         I[Raw LLM Text] --> J[Parse Documents]
         J --> K[Fetch Markdown]
@@ -74,6 +75,10 @@ graph TD
 ### 3.1 디렉토리 구조
 ```
 src/
+├── config/                            # 환경 정의
+│   ├── env.d.ts                        # 기본 정의
+│   ├── index.ts                        # 차례
+│   └── validation.ts                   # 유효성 검증
 ├── constants/                         # 상수 정의
 │   ├── base-prompt.ts                  # 기본 프롬프트
 │   ├── basic-http-headers.ts           # HTTP 헤더
@@ -91,13 +96,22 @@ src/
 ├── llm/                               # LLM
 |   └── llms.txt                        # 연동을 위한 개발자 문서
 ├── markdown/                          # Markdown
-|   ├── 00.xxxxx.md                      # 주요 markdown 00
+|   ├── 00.xxxxx.markdown               # 주요 markdown 00
 |   ├── .....                           .....
-|   └── 14.xxxxx.md                      # 주요 markdown 14
-├── tool/                              # 서비스 계층
-│   └── service.ts                      # 검색결과 처리
+|   └── 14.xxxxx.markdown               # 주요 markdown 14
+├── repository/                        # 저장소
+│   └── nicepayments-docs.repository.ts # 저장소 문서 처리
+├── schemas/                           # 서비스 계층
+│   ├── service.ts                      # 검색결과 처리
+│   └── tool.ts                         # 키워드 검증
+├── tests/                             # 테스트
+│   └── server.test.ts                  # 테스트 서버
+├── tests/                             # 테스트
+│   └── env.d.ts                        # 환경 설정
 ├── utils/                             # 유틸리티
 │   ├── calculateBM25.ts                # BM25 검색 알고리즘
+│   ├── logger.ts                       # 로거 도구
+│   ├── metrics.ts                      # 메트릭 도구 
 │   └── toRemoteMarkdownLink.ts         # 링크 변환 유틸
 └── server.ts                          # 메인 서버
 ```
