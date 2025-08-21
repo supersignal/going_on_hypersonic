@@ -2,10 +2,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { isNativeError } from "node:util/types";
 import { z } from "zod";
-import dotenv from 'dotenv';
 import { validateEnv } from './config/validation.js';
 //환경변수 로드 및 검증
-dotenv.config();
+//dotenv.config();
 const env = validateEnv();
 console.log('환경변수 검증 완료:', env);
 const server = new McpServer({

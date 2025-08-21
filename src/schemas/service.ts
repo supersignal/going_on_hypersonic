@@ -1,5 +1,6 @@
 import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { NicePaymentDocsRepository } from "../repository/nicepayments-docs.repository.js";
+import { CONFIG } from '../config/index.js';
 
 export const repository = await NicePaymentDocsRepository.load();
 
@@ -13,7 +14,7 @@ export async function getDocumentsByKeyword(
     // [디버그] 검색 결과 텍스트 출력
 //    console.log('[DEBUG][service] 검색 결과 텍스트:', text);
   // 로깅 레벨에 따른 출력 제어
-    if (process.env.LOG_LEVEL === 'debug') {
+    if (CONFIG.server.logLevel === 'debug') {
       console.log('[DEBUG][service] 입력 키워드:', keywords);
       console.log('[DEBUG][service] 검색 결과 텍스트:', text);
     }

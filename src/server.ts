@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import { validateEnv } from './config/validation.js';
 
 //환경변수 로드 및 검증
-dotenv.config();
+//dotenv.config();
 const env = validateEnv();
 console.log('환경변수 검증 완료:', env);
 

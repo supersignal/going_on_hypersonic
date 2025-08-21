@@ -1,11 +1,5 @@
-export function calculateBM25ScoresByKeywords(keywords, documents, 
-//  k1: number = 1.2,
-//  b: number = 0.75
-//  k1: number = parseFloat(process.env.BM25_K1) || 1.2,
-//  b: number = parseFloat(process.env.BM25_B) || 0.75  
-//  k1: number = parseFloat(process.env.BM25_K1 ?? '1.2'),
-//  b: number = parseFloat(process.env.BM25_B ?? '0.75')  
-k1 = parseFloat(process.env.BM25_K1 || '1.2'), b = parseFloat(process.env.BM25_B || '0.75')) {
+import { CONFIG } from '../config/index.js';
+export function calculateBM25ScoresByKeywords(keywords, documents, k1 = CONFIG.search.bm25.k1, b = CONFIG.search.bm25.b) {
     const allChunks = documents.flatMap((doc) => doc.getChunks());
     const totalCount = allChunks.reduce((count, doc) => count + doc.wordCount, 0);
     const avgDocLength = totalCount / allChunks.length;

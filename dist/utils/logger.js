@@ -1,3 +1,4 @@
+import { CONFIG } from '../config/index.js';
 export var LogLevel;
 (function (LogLevel) {
     LogLevel["ERROR"] = "error";
@@ -6,9 +7,16 @@ export var LogLevel;
     LogLevel["DEBUG"] = "debug";
 })(LogLevel || (LogLevel = {}));
 export class Logger {
+    static instance;
     level;
-    constructor(level = 'info') {
-        this.level = this.parseLogLevel(level);
+    static getInstance() {
+        if (!Logger.instance) {
+            Logger.instance = new Logger();
+        }
+        return Logger.instance;
+    }
+    constructor() {
+        this.level = this.parseLogLevel(CONFIG.server.logLevel);
     }
     parseLogLevel(level) {
         switch (level.toLowerCase()) {

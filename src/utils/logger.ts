@@ -1,3 +1,5 @@
+import { CONFIG } from '../config/index.js';
+
 export enum LogLevel {
     ERROR = 'error',
     WARN = 'warn',
@@ -6,12 +8,20 @@ export enum LogLevel {
   }
   
   export class Logger {
+    private static instance: Logger;
     private level: LogLevel;
   
-    constructor(level: string = 'info') {
-      this.level = this.parseLogLevel(level);
+    static getInstance(): Logger {
+      if (!Logger.instance) {
+        Logger.instance = new Logger();
+      }
+      return Logger.instance;
     }
-  
+
+    private constructor() {
+      this.level = this.parseLogLevel(CONFIG.server.logLevel);
+    }
+
     private parseLogLevel(level: string): LogLevel {
       switch (level.toLowerCase()) {
         case 'error': return LogLevel.ERROR;

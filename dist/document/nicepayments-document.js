@@ -1,3 +1,4 @@
+import { GITHUB_CONFIG } from '../config/index.js';
 export class NicePaymentsDocument {
     keywordSet;
     remoteMarkdownDocument;
@@ -67,8 +68,9 @@ export class NicePaymentsDocument {
         }
         // 로컬 파일 경로 처리
         let pathToProcess = link;
-        if (link.startsWith("https://github.com/supersignal/going_on_hypersonic/blob/main/src/markdown/")) {
-            pathToProcess = link.replace("https://github.com/supersignal/going_on_hypersonic/blob/main/src/markdown/", "");
+        const markdownBase = `${GITHUB_CONFIG.baseUrl}${GITHUB_CONFIG.markdownPath}/`;
+        if (link.startsWith(GITHUB_CONFIG.baseUrl + GITHUB_CONFIG.markdownPath)) {
+            pathToProcess = link.replace(markdownBase, "");
         }
         // 경로를 분할하여 역순으로 반환
         return pathToProcess

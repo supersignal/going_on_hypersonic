@@ -9,12 +9,15 @@ import { NicePaymentsDocumentLoader } from "../document/nicepayments-document.lo
 import { MarkdownDocumentFetcher } from "../document/markdown-document.fetcher.js";
 import { DocumentChunk } from "../document/document-chunk.js";
 import path from "node:path";
+import { GITHUB_CONFIG } from '../config/index.js';
+import { Logger } from '../utils/logger.js';
+import { CONFIG } from '../config/index.js';
 
 export class NicePaymentDocsRepository {
 //  static async load(link = "https://github.com/supersignal/going_on_hypersonic/blob/main/llm/llms.txt") {
   static async load(
     link = process.env.NICEPAY_DATA_PATH ||
-      "https://raw.githubusercontent.com/supersignal/going_on_hypersonic/main/src/llm/llms.txt"
+           GITHUB_CONFIG.baseUrl+GITHUB_CONFIG.llmPath+"/llms.txt"
   ) {
     let llmText: string;
     try {
@@ -63,7 +66,6 @@ export class NicePaymentDocsRepository {
     topN: number = 10
   ): Promise<string> {
     // [디버그] 검색 키워드 입력값 출력
-//    console.log('[DEBUG][repository] findDocumentsByKeyword - 입력 키워드:', keywords);
     this.log('debug', 'findDocumentsByKeyword - 입력 키워드:', keywords);
     const result = await this.getDocumentsByKeywordForLLM(
       this.documents,
@@ -71,7 +73,6 @@ export class NicePaymentDocsRepository {
       topN
     );
     // [디버그] getDocumentsByKeywordForLLM 반환값 출력
-//    console.log('[DEBUG][repository] findDocumentsByKeyword - getDocumentsByKeywordForLLM 반환값:', result);
     this.log('debug', 'findDocumentsByKeyword - getDocumentsByKeywordForLLM 반환값:', result);
     if (!result || result.trim() === "") {
       console.log("[DEBUG] BM25 검색 결과 없음");
@@ -91,15 +92,12 @@ export class NicePaymentDocsRepository {
     topN: number = 10
   ): Promise<string> {
     // [디버그] BM25 점수 계산 전 입력값 출력
-//    console.log('[DEBUG][repository] getDocumentsByKeywordForLLM - 입력 keywords:', keywords);
     this.log('debug', 'getDocumentsByKeywordForLLM - 입력 keywords:', keywords);
     const results = calculateBM25ScoresByKeywords(
       keywords.join("|"),
       documents
     );
     // [디버그] BM25 점수 결과 상위 3개 출력
-//    console.log('[DEBUG][repository] getDocumentsByKeywordForLLM - BM25 결과:', results.length, results.slice(0, 3));
-//    this.log('debug', 'getDocumentsByKeywordForLLM - BM25 결과:', results.length, results.slice(0, 3)); 
     this.log('debug', 'getDocumentsByKeywordForLLM - BM25 결과:', { length: results.length, top3: results.slice(0, 3) });
     const docs = results
       .slice(0, topN)
@@ -123,7 +121,6 @@ export class NicePaymentDocsRepository {
 
   private normalizeChunks(chunks: DocumentChunk[]): string {
     // [디버그] normalizeChunks 입력값 출력
-//    console.log('[DEBUG][repository] normalizeChunks - 입력 청크:', chunks);
     this.log('debug', 'normalizeChunks - 입력 청크:', chunks);
     return `## 원본문서 제목 : ${chunks[0].originTitle}\n* 원본문서 ID : ${
       chunks[0].id
@@ -131,9 +128,8 @@ export class NicePaymentDocsRepository {
   }
 
   private log(level: 'debug' | 'info' | 'error', message: string, data?: any) {
-    if (process.env.LOG_LEVEL === 'debug' || level === 'error') {
-      console.log(`[${level.toUpperCase()}][repository] ${message}`, data || '');
-    }
+    const logger = Logger.getInstance();
+    logger[level](`[repository] ${message}`, data);
   }
-  
+
 } 
