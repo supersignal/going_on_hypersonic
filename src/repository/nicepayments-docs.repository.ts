@@ -1,6 +1,6 @@
 import { parseLLMText } from "../document/parseLLMText.js";
 import { NicePaymentsDocument } from "../document/nicepayments-document.js";
-import { categories, Category } from "../constants/category.js";
+//import { categories, Category } from "../constants/category.js";
 import {
   BM25Result,
   calculateBM25ScoresByKeywords,
@@ -11,7 +11,7 @@ import { DocumentChunk } from "../document/document-chunk.js";
 import path from "node:path";
 import { GITHUB_CONFIG } from '../config/index.js';
 import { Logger } from '../utils/logger.js';
-import { CONFIG } from '../config/index.js';
+//import { CONFIG } from '../config/index.js';
 
 export class NicePaymentDocsRepository {
 //  static async load(link = "https://github.com/supersignal/going_on_hypersonic/blob/main/llm/llms.txt") {
