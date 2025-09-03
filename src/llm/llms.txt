@@ -4,33 +4,55 @@ NicePay PG 연동을 위한 개발자 문서입니다.
 
 ## 안내
 - [Quickstart]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/00.index.markdown) : 고객사에서 방화벽 열어야하는 대상정보 및 설정 확인방법 안내, 결제/취소 데모 화면 링크 제공, 결제 샘플코드(인증결제 api 샘플코드, app web-view 샘플코드, 결제통보 샘플코드) 
-- [G2 인증서 변경 가이드]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/13.manual-digicert-apply.markdown) : 
-- [FAQ]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/14.tip.markdown) : 
+- [G2 인증서 변경 가이드]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/13.manual-digicert-apply.markdown) : 인증서 만료 및 보안정책 강화에 따른 주기적인 작업으로 가맹점과 PG사 간 HTTPS 통신시 필요한 인증서 교체 및 변경 가이드
+- [FAQ]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/14.tip.markdown) : 코드별 상세 설명 페이지
 
 ## API
-- [인증 결제 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/01.manual-auth.markdown) : 
-- [카드 키인 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/02.manual-card-keyin.markdown) : 
-- [카드 빌링 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/03.manual-card-billing.markdown) : 
-- [가상계좌 발급 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/04.manual-virtual-account.markdown) : 
-- [취소 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/05.manual-cancel.markdown) : 
-- [결제조회 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/07.manual-status.markdown) : 
-- [결제통보 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/08.manual-noti.markdown) : 
-- [영수증 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/09.manual.receipt.markdown) : 
+- [인증 결제 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/01.manual-auth.markdown) : PC/MOBILE 결제창 호출하고 인증 결제를 구현할 수 있는 서비스와 주요 파라미터 설명 그리고 샘플코드
+- [카드 키인 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/02.manual-card-keyin.markdown) : 카드 키인 결제를 구현할 수 있는 서비스와 주요 파라미터 설명 그리고 샘플코드
+- [카드 빌링 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/03.manual-card-billing.markdown) : 카드빌링 서비스는 한번의 카드 등록으로 반복적인 결제를 구현할 수 있는 서비스와 주요 파라미터 설명 그리고 샘플코드
+- [가상계좌 발급 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/04.manual-virtual-account.markdown) : 일회성 입금 전용 계좌번호를 발급하는 서비스와 주요 파라미터 설명 그리고 샘플코드
+- [취소 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/05.manual-cancel.markdown) : 승인 취소 서비스와 주요 파라미터 설명 그리고 샘플코드
+- [결제조회 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/07.manual-status.markdown) : TID의 승인/취소 여부 등 현재 결제 상태를 확인하는 서비스와 주요 파라미터 설명 그리고 샘플코드
+- [결제통보 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/08.manual-noti.markdown) : 결제가 완료되면 승인 결과 데이터를 가맹점이 원하는 URL 혹은 IP 주소에 통보하는 서비스와 주요 파라미터 설명 그리고 샘플코드
+- [영수증 API]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/09.manual.receipt.markdown) : 일반 영수증(매출전표)/현금영수증의 조회서비스와 주요 파라미터 설명 그리고 샘플코드
 
 ## APP
-- [APP(iOS/Android)]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/06.manual-app.markdown) : 
+- [APP(iOS/Android)]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/06.manual-app.markdown) : ANDROID Kotlin/JAVA Web-view 연동 가이드 그리고 샘플 코드, iOS SWIFT/Objective-C Web-view 연동 가이드 그리고 샘플 코드
 
 ## 코드
-- [카드사/은행 코드]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/10.manual-code-partner.markdown) : 
-- [결과코드]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/11.manual-code.markdown) : 
+- [카드사/은행 코드]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/10.manual-code-partner.markdown) : 카드사/은행/증권사 코드
+- [결과코드]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/11.manual-code.markdown) : 신용카드/휴대폰(소액결제)/가상계좌/에스크로/현금영수증/계좌이체/결제취소/일반/인증에러/빌키발급/API에러 코드
 
 ## 예외
-- [예외/보안 처리]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/12.manual-exception.markdown) : 
+- [예외/보안 처리]( https://github.com/supersignal/going_on_hypersonic/blob/main/markdown/12.manual-exception.markdown) : 망취소 서비스와 주요 파라미터 설명 그리고 샘플코드
 
 ## 지원
 기술 지원이 필요하신 경우 아래 연락처로 문의해주세요:
 - 이메일: it@nicepay.co.kr
 - 연동한 API 문서와 요청/응답값, 증상의 상세내용을 전달하시면 빠른 응대가 가능합니다.
+
+## 결제/취소 데모
+- [PC 결제 데모] (https://www.nicepay.co.kr/support/demo/pcReqPopup.do) : PC 결제 데모
+- [Mobile 결제 데모] (https://www.nicepay.co.kr/support/demo/smartReqPopup.do) :
+- [취소] (https://www.nicepay.co.kr/support/demo/cancelReqPopup.do) : 
+
+## 다운로드(결제 샘플코드)
+### 인증결제 API 샘플코드
+- [JSP] (https://developers.nicepay.co.kr/releases/auth/NICEPAY-API-JSP-3.2.0.zip) : 다운로드할 수 있는 JSP로 구현된 인증결제 API 샘플코드
+- [PHP] (https://developers.nicepay.co.kr/releases/auth/NICEPAY-API-PHP-3.2.0.zip) : 다운로드할 수 있는 PHP로 구현된 인증결제 API 샘플코드
+- [.NET] (https://developers.nicepay.co.kr/releases/auth/NICEPAY-API-NET-3.2.0.zip) : 다운로드할 수 있는 .NET로 구현된 인증결제 API 샘플코드
+- [NODE.JS] (https://developers.nicepay.co.kr/releases/auth/NICEPAY-API-NODEJS-3.2.1.zip) : 다운로드할 수 있는 NODE.JS로 구현된 인증결제 API 샘플코드
+- [PYTHON] (https://developers.nicepay.co.kr/releases/auth/NICEPAY-API-PYTHON-3.2.0.zip) : 다운로드할 수 있는 PYTHON로 구현된 인증결제 API 샘플코드
+
+### App web-view 샘플코드
+- [IOS(OBJ-C, SWIFT)] (https://developers.nicepay.co.kr/releases/app/NICEPAY-IOS.zip) : 다운로드할 수 있는 IOS용 OBJ-C, SWIFT로 구현된 App web-view 샘플코드
+- [ANDROID(JAVA, KOTLIN)] (https://developers.nicepay.co.kr/releases/app/NICEPAY-ANDROID.zip) : 다운로드할 수 있는 ANDROID용 JAVA, KOTLIN로 구현된 App web-view 샘플코드
+
+### 결제통보 샘플코드
+- [JSP] (https://developers.nicepay.co.kr/releases/noti/NICEPAY-NOTI-SAMPLE-JSP.zip) : 다운로드할 수 있는 JSP로 구현된 결제통보 샘플코드
+- [PHP] (https://developers.nicepay.co.kr/releases/noti/NICEPAY-NOTI-SAMPLE-PHP.zip) : 다운로드할 수 있는 PHP로 구현된 결제통보 샘플코드
+- [.NET] (https://developers.nicepay.co.kr/releases/noti/NICEPAY-NOTI-SAMPLE-NET.zip) : 다운로드할 수 있는 .NET로 구현된 결제통보 샘플코드
 
 ---
 © NICEPAYMENTS 2025
